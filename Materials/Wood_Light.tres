@@ -3,7 +3,7 @@
 [ext_resource type="Texture2D" uid="uid://c4y51a8l6hfym" path="res://Materials/Textures/Light_Wood.png" id="1_4fug5"]
 
 [resource]
-albedo_color = Color(0.8175213, 0.8175213, 0.81752115, 1)
+albedo_color = Color(0.38170323, 0.3817033, 0.38170302, 1)
 albedo_texture = ExtResource("1_4fug5")
 metallic = 1.0
-roughness = 0.1
+metallic_specular = 0.0

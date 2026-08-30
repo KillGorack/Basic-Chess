@@ -269,9 +269,17 @@ current = true
 target_position = Vector3(0, 0, -100)
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=9168452]
-transform = Transform3D(0.25881904, -3.239805e-08, 0.9659258, -0.9659258, -4.222196e-08, 0.25881904, 3.239805e-08, -1, -4.222196e-08, 0, 2.1885026, 0)
+transform = Transform3D(0.7071067, -1.2802769e-08, 0.7071067, -0.7071067, -3.090862e-08, 0.7071067, 1.2802768e-08, -1, -3.0908616e-08, 0, 2.1885026, 0)
 light_energy = 4.0
+light_angular_distance = 2.0
 shadow_enabled = true
+shadow_bias = 0.03
+shadow_normal_bias = 1.0
+shadow_blur = 2.0
+directional_shadow_mode = 0
+directional_shadow_fade_start = 1.0
+directional_shadow_max_distance = 10.0
+sky_mode = 1
 script = ExtResource("5_exx3d")
 degrees_per_second = 1.0
 
