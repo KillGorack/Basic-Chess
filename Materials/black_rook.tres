@@ -1,0 +1,12 @@
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://04hmn63nhe0i"]
+
+[ext_resource type="Texture2D" uid="uid://07asbtcif4wn" path="res://Materials/Textures/new_rook.png" id="1_5x2tf"]
+
+[resource]
+albedo_texture = ExtResource("1_5x2tf")
+metallic = 1.0
+metallic_specular = 0.0
+roughness = 0.1
+emission_enabled = true
+emission_energy_multiplier = 0.05
+emission_texture = ExtResource("1_5x2tf")

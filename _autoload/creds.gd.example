@@ -1,0 +1,7 @@
+extends Node
+
+const apiID: int = 0
+const apiKEY: String = ""
+
+func _ready() -> void:
+	pass

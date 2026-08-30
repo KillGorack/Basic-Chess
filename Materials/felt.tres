@@ -1,0 +1,13 @@
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://rca7tiytjlen"]
+
+[ext_resource type="Texture2D" uid="uid://bwtss0kgu0gmw" path="res://Materials/Textures/velour_velvet_diff.png" id="1_1l553"]
+[ext_resource type="Texture2D" uid="uid://hyxg4j140qh8" path="res://Materials/Textures/velour_velvet_disp.png" id="2_qtwth"]
+[ext_resource type="Texture2D" uid="uid://dk1may2xhyyyl" path="res://Materials/Textures/velour_velvet_nor_gl.png" id="2_tcuwl"]
+
+[resource]
+albedo_texture = ExtResource("1_1l553")
+metallic_specular = 0.0
+normal_enabled = true
+normal_texture = ExtResource("2_tcuwl")
+heightmap_enabled = true
+heightmap_texture = ExtResource("2_qtwth")

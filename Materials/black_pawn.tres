@@ -1,0 +1,13 @@
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://8blh50sq6e48"]
+
+[ext_resource type="Texture2D" uid="uid://dsk36gedde6so" path="res://Materials/Textures/new_pawn.png" id="1_k23qa"]
+
+[resource]
+albedo_texture = ExtResource("1_k23qa")
+metallic = 1.0
+metallic_specular = 0.0
+roughness = 0.1
+emission_enabled = true
+emission_energy_multiplier = 0.05
+emission_texture = ExtResource("1_k23qa")
+rim_enabled = true

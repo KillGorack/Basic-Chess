@@ -1,0 +1,11 @@
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://c0ojx0qwf5o0f"]
+
+[ext_resource type="Texture2D" uid="uid://djnoypt3vlwb5" path="res://Materials/Textures/new_queen.png" id="1_aqg10"]
+
+[resource]
+albedo_texture = ExtResource("1_aqg10")
+metallic = 1.0
+metallic_specular = 0.0
+roughness = 0.1
+emission_enabled = true
+emission_energy_multiplier = 0.05

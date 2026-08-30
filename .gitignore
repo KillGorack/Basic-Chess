@@ -1,0 +1,9 @@
+# Godot 4+ specific ignores
+.godot/
+/android/
+
+# Build output
+/builds/
+
+# Local secrets (see _autoload/creds.gd.example for the template)
+/_autoload/creds.gd

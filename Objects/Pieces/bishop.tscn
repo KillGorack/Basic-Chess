@@ -1,0 +1,30 @@
+[gd_scene format=3 uid="uid://d4l82mqvywcr"]
+
+[ext_resource type="Script" uid="uid://nweunxbh4a5c" path="res://Objects/Pieces/_scripts/piece_handler.gd" id="1_0la00"]
+[ext_resource type="ArrayMesh" uid="uid://b4rsj1g35koq7" path="res://models/Bishop.obj" id="1_4ghij"]
+[ext_resource type="Material" uid="uid://rca7tiytjlen" path="res://Materials/felt.tres" id="4_4lpup"]
+
+[sub_resource type="CylinderShape3D" id="CylinderShape3D_xl04c"]
+height = 0.6997986
+radius = 0.17529297
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_2x3wy"]
+top_radius = 0.16
+bottom_radius = 0.16
+height = 0.005
+
+[node name="Bishop" type="RigidBody3D" unique_id=719035469]
+script = ExtResource("1_0la00")
+
+[node name="PIECE" type="MeshInstance3D" parent="." unique_id=857659867]
+mesh = ExtResource("1_4ghij")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=10334826]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.35002136, 0)
+visible = false
+shape = SubResource("CylinderShape3D_xl04c")
+
+[node name="felt" type="MeshInstance3D" parent="." unique_id=1592490140]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.002475746, 0)
+material_override = ExtResource("4_4lpup")
+mesh = SubResource("CylinderMesh_2x3wy")

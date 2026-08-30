@@ -1,0 +1,13 @@
+[gd_scene format=3 uid="uid://bhum2wo58q4fq"]
+
+[ext_resource type="Material" uid="uid://bwqtwlfepjjdx" path="res://Materials/cursor.tres" id="1_2l40a"]
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_qaun3"]
+size = Vector2(0.57, 0.57)
+
+[node name="Cursor" type="Node3D" unique_id=1365441822]
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=1034184459]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.001, 0)
+mesh = SubResource("PlaneMesh_qaun3")
+surface_material_override/0 = ExtResource("1_2l40a")

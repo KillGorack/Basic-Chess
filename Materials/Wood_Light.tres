@@ -1,0 +1,9 @@
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://6g2awtq37f2k"]
+
+[ext_resource type="Texture2D" uid="uid://c4y51a8l6hfym" path="res://Materials/Textures/Light_Wood.png" id="1_4fug5"]
+
+[resource]
+albedo_color = Color(0.8175213, 0.8175213, 0.81752115, 1)
+albedo_texture = ExtResource("1_4fug5")
+metallic = 1.0
+roughness = 0.1

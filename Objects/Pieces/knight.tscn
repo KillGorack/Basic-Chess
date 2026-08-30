@@ -1,0 +1,30 @@
+[gd_scene format=3 uid="uid://b778pp75yxfp0"]
+
+[ext_resource type="ArrayMesh" uid="uid://dw8hw7owulait" path="res://models/Knight.obj" id="1_5vxew"]
+[ext_resource type="Script" uid="uid://nweunxbh4a5c" path="res://Objects/Pieces/_scripts/piece_handler.gd" id="2_bhpuj"]
+[ext_resource type="Material" uid="uid://rca7tiytjlen" path="res://Materials/felt.tres" id="3_52rfu"]
+
+[sub_resource type="CylinderShape3D" id="CylinderShape3D_xl04c"]
+height = 0.5001831
+radius = 0.15039063
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_l438j"]
+top_radius = 0.159
+bottom_radius = 0.159
+height = 0.005
+
+[node name="Knight" type="RigidBody3D" unique_id=719035469]
+script = ExtResource("2_bhpuj")
+
+[node name="PIECE" type="MeshInstance3D" parent="." unique_id=1284512289]
+mesh = ExtResource("1_5vxew")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=10334826]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.25021362, 0)
+visible = false
+shape = SubResource("CylinderShape3D_xl04c")
+
+[node name="felt" type="MeshInstance3D" parent="." unique_id=2145764361]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.002475746, -0.0045715496)
+material_override = ExtResource("3_52rfu")
+mesh = SubResource("CylinderMesh_l438j")

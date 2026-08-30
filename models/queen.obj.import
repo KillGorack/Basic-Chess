@@ -1,0 +1,25 @@
+[remap]
+
+importer="wavefront_obj"
+importer_version=1
+type="Mesh"
+uid="uid://b458s4q5y2wyn"
+path="res://.godot/imported/queen.obj-601d4bffa3fff20049acc93ab6a8be16.mesh"
+
+[deps]
+
+files=["res://.godot/imported/queen.obj-601d4bffa3fff20049acc93ab6a8be16.mesh"]
+
+source_file="res://models/queen.obj"
+dest_files=["res://.godot/imported/queen.obj-601d4bffa3fff20049acc93ab6a8be16.mesh", "res://.godot/imported/queen.obj-601d4bffa3fff20049acc93ab6a8be16.mesh"]
+
+[params]
+
+generate_tangents=true
+generate_lods=true
+generate_shadow_mesh=true
+generate_lightmap_uv2=false
+generate_lightmap_uv2_texel_size=0.2
+scale_mesh=Vector3(1, 1, 1)
+offset_mesh=Vector3(0, 0, 0)
+force_disable_mesh_compression=false

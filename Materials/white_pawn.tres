@@ -1,0 +1,9 @@
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://bto4tppiuiom"]
+
+[ext_resource type="Texture2D" uid="uid://bffeelkg3qwt4" path="res://Materials/Textures/white_pawn.png" id="1_yiu4m"]
+
+[resource]
+albedo_texture = ExtResource("1_yiu4m")
+metallic = 0.38
+metallic_specular = 0.0
+roughness = 0.17

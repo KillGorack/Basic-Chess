@@ -1,0 +1,8 @@
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://dgpqndx3xrpiq"]
+
+[ext_resource type="Texture2D" uid="uid://bj3317jgrxs7" path="res://Materials/Textures/Dark_Wood.png" id="1_0njha"]
+
+[resource]
+albedo_texture = ExtResource("1_0njha")
+metallic = 1.0
+roughness = 0.1
