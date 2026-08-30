@@ -1,9 +1,0 @@
-[gd_resource type="StandardMaterial3D" format=3 uid="uid://hb5o5h54d7ne"]
-
-[ext_resource type="Texture2D" uid="uid://d3kf26u73ibrt" path="res://Materials/Textures/white_bishop.png" id="1_db6uo"]
-
-[resource]
-albedo_texture = ExtResource("1_db6uo")
-metallic = 0.4
-metallic_specular = 0.0
-roughness = 0.0

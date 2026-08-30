@@ -3,33 +3,33 @@ extends Node3D
 const PIECE_DATA := {
 	"PAWN": {
 		model = preload("res://Objects/Pieces/pawn.tscn"),
-		black = preload("res://Materials/black_pawn.tres"),
-		white = preload("res://Materials/white_pawn.tres")
+		black = preload("res://Materials/piece_black_shader.tres"),
+		white = preload("res://Materials/piece_white_shader.tres")
 	},
 	"KNIGHT": {
 		model = preload("res://Objects/Pieces/knight.tscn"),
-		black = preload("res://Materials/black_knight.tres"),
-		white = preload("res://Materials/piece_white.tres") # placeholder
+		black = preload("res://Materials/piece_black_shader.tres"),
+		white = preload("res://Materials/piece_white_shader.tres")
 	},
 	"BISHOP": {
 		model = preload("res://Objects/Pieces/bishop.tscn"),
-		black = preload("res://Materials/black_bishop.tres"),
-		white = preload("res://Materials/white_bishop.tres")
+		black = preload("res://Materials/piece_black_shader.tres"),
+		white = preload("res://Materials/piece_white_shader.tres")
 	},
 	"ROOK": {
 		model = preload("res://Objects/Pieces/rook.tscn"),
-		black = preload("res://Materials/black_rook.tres"),
-		white = preload("res://Materials/piece_white.tres") # placeholder
+		black = preload("res://Materials/piece_black_shader.tres"),
+		white = preload("res://Materials/piece_white_shader.tres")
 	},
 	"QUEEN": {
 		model = preload("res://Objects/Pieces/queen.tscn"),
-		black = preload("res://Materials/black_queen.tres"),
-		white = preload("res://Materials/piece_white.tres") # placeholder
+		black = preload("res://Materials/piece_black_shader.tres"),
+		white = preload("res://Materials/piece_white_shader.tres")
 	},
 	"KING": {
 		model = preload("res://Objects/Pieces/king.tscn"),
-		black = preload("res://Materials/black_king.tres"),
-		white = preload("res://Materials/piece_white.tres") # placeholder
+		black = preload("res://Materials/piece_black_shader.tres"),
+		white = preload("res://Materials/piece_white_shader.tres")
 	}
 }
 
@@ -59,6 +59,14 @@ const PROMOTION_ICONS := {
 
 const SQUARE_SIZE: float = 0.57
 
+const HOP_DURATION := 0.5
+const HOP_HEIGHT := 1.0
+const SLIDE_SPEED := 2.2 # world units/sec; distance-scaled so long slides don't look instant
+const SLIDE_MIN_DURATION := 0.18
+const SLIDE_MAX_DURATION := 0.55
+const CAPTURE_SETTLE_TIME := 1.0
+const FADE_DURATION := 0.6
+
 @onready var btn_toQueue = $UI/HBoxContainer/btn_Queue
 @onready var txt_Name = $UI/HBoxContainer/txt_Name
 @onready var lbl_status = $UI/Status_Back/lbl_Status
@@ -85,6 +93,11 @@ const CURSOR_SCENE := preload("res://Objects/cursor.tscn")
 var selected_square: Vector2i = Vector2i(-1, -1)
 var legal_targets: Array[Vector2i] = []
 var highlight_nodes: Array[Node3D] = []
+
+# Mirrors board_state with the live piece node currently sitting on each
+# square (or null), so a move can animate the existing node instead of
+# rebuilding the whole board.
+var piece_nodes: Array = []
 
 var promotion_pending: bool = false
 signal promotion_chosen(piece_type: int)
@@ -218,12 +231,13 @@ func _enter_game(row: Dictionary, color: int) -> void:
 
 func _on_game_state_updated(data: Dictionary) -> void:
 	var previous_turn := Utilities.white_to_move
+	var old_board: Array = Utilities.board_state.duplicate(true)
 	_apply_state_json(data.get('game_state_json', ""))
 	Utilities.set_move_history_from_json(data.get('move_history_json', ""))
 	var secs_val = data.get('opponent_seconds_since_seen')
 	_opponent_seconds_since_seen = int(secs_val) if secs_val != null else -1
 	if Utilities.white_to_move != previous_turn:
-		load_board(Utilities.board_state)
+		_apply_remote_update(old_board, Utilities.board_state)
 		_clear_selection()
 	_update_turn_status()
 
@@ -381,6 +395,9 @@ func exit_game() -> void:
 func load_board(state: Array) -> void:
 	for child: Node in $Pieces.get_children():
 		child.queue_free()
+	piece_nodes = []
+	for rank: int in range(8):
+		piece_nodes.append([null, null, null, null, null, null, null, null])
 	for rank: int in range(8):
 		for file: int in range(8):
 			var code: int = state[rank][file]
@@ -388,6 +405,7 @@ func load_board(state: Array) -> void:
 				continue
 			var piece := spawn_piece(code, rank, file)
 			$Pieces.add_child(piece)
+			piece_nodes[rank][file] = piece
 
 
 
@@ -403,6 +421,7 @@ func spawn_piece(code: int, rank: int, file: int) -> Node3D:
 	if not is_white:
 		piece.rotate_y(PI)
 	apply_piece_material(piece, data, is_white)
+	_isolate_materials(piece)
 	piece.transform.origin = board_to_world(rank, file)
 	return piece
 
@@ -441,6 +460,209 @@ func get_mesh(node: Node) -> MeshInstance3D:
 		if found:
 			return found
 	return null
+
+
+func get_all_meshes(node: Node) -> Array[MeshInstance3D]:
+	var result: Array[MeshInstance3D] = []
+	for child in node.get_children():
+		if child is MeshInstance3D:
+			result.append(child)
+		result.append_array(get_all_meshes(child))
+	return result
+
+
+# The piece/felt materials are shared .tres resources reused across every
+# piece of that type and color. Duplicate them per-instance so fading out a
+# captured piece can't fade every other piece sharing that material.
+func _isolate_materials(piece: Node3D) -> void:
+	for mesh: MeshInstance3D in get_all_meshes(piece):
+		if mesh.material_override:
+			mesh.material_override = mesh.material_override.duplicate()
+		if mesh.mesh:
+			for i in mesh.mesh.get_surface_count():
+				var mat := mesh.get_surface_override_material(i)
+				if mat:
+					mesh.set_surface_override_material(i, mat.duplicate())
+
+
+
+
+# MOVEMENT / CAPTURE ANIMATION =================================
+
+# Diffs two board states and animates exactly the squares that changed —
+# used for both the local player's move and an incoming opponent move, so
+# hopping/capture behaves identically regardless of who moved.
+func _apply_remote_update(old_state: Array, new_state: Array) -> void:
+	var vacated: Array[Vector2i] = []
+	var filled: Array[Vector2i] = []
+	for rank in range(8):
+		for file in range(8):
+			if old_state[rank][file] == new_state[rank][file]:
+				continue
+			if new_state[rank][file] == 0:
+				vacated.append(Vector2i(rank, file))
+			else:
+				filled.append(Vector2i(rank, file))
+
+	# More than a single ply's worth of squares changed (e.g. reconnecting
+	# after missing moves) — too ambiguous to animate meaningfully, just snap.
+	if vacated.size() + filled.size() == 0 or vacated.size() + filled.size() > 4:
+		load_board(new_state)
+		return
+
+	for dest in filled:
+		var moved_code: int = new_state[dest.x][dest.y]
+		var origin_index := -1
+		for i in vacated.size():
+			var origin: Vector2i = vacated[i]
+			if old_state[origin.x][origin.y] == moved_code:
+				origin_index = i
+				break
+		if origin_index == -1:
+			# Promotion: the arriving code differs from what left (pawn -> queen).
+			for i in vacated.size():
+				var origin: Vector2i = vacated[i]
+				if sign(old_state[origin.x][origin.y]) == sign(moved_code) \
+						and abs(old_state[origin.x][origin.y]) == 1:
+					origin_index = i
+					break
+		if origin_index != -1:
+			var origin: Vector2i = vacated[origin_index]
+			vacated.remove_at(origin_index)
+			_animate_piece_move(origin, dest, moved_code)
+
+	# Any square that emptied without a matching arrival lost its piece
+	# outright — an en passant capture, which doesn't land on the mover's
+	# own destination square.
+	for square in vacated:
+		_capture_square_if_occupied(square)
+
+	_verify_board_sync(new_state)
+
+
+# Cheap self-healing check: confirms the piece actually sitting on every
+# square matches the authoritative board_state we were just given. The
+# matching above is a heuristic — if a reconnect ever lands more than one
+# move in a single update and two same-type/color pieces are both part of
+# it, it can pair the wrong "vanished" square with the wrong "appeared"
+# square, wrongly treating a relocated piece as captured. board_state itself
+# (used for all move legality/check logic) is never affected by that, but
+# the visual board can end up showing a missing or ghost piece. This runs
+# after every move, local or remote, and any mismatch triggers an instant
+# full rebuild from the real state rather than leaving a lingering desync.
+func _verify_board_sync(state: Array) -> void:
+	for rank in range(8):
+		for file in range(8):
+			var expected: int = state[rank][file]
+			var node: Node3D = piece_nodes[rank][file]
+			var actual: int = 0
+			if node != null and is_instance_valid(node):
+				actual = node.piece * node.team
+			if actual != expected:
+				load_board(state)
+				return
+
+
+func _animate_piece_move(from: Vector2i, to: Vector2i, code: int) -> void:
+	_capture_square_if_occupied(to)
+	var node: Node3D = piece_nodes[from.x][from.y]
+	piece_nodes[from.x][from.y] = null
+	piece_nodes[to.x][to.y] = node
+	if node == null:
+		return
+	var target := board_to_world(to.x, to.y)
+	# Every piece but the knight only ever has a legal move when its path is
+	# clear, so sliding always reads correctly for them. The knight is the one
+	# piece allowed to jump over occupied squares, and its L-shaped move isn't
+	# a straight line anyway, so it hops instead.
+	if node.piece == 2:
+		await _hop_tween(node, target)
+	else:
+		await _slide_tween(node, target)
+	if is_instance_valid(node) and abs(code) != node.piece:
+		_swap_promoted_piece(to, code)
+
+
+func _hop_tween(node: Node3D, target: Vector3) -> void:
+	var start: Vector3 = node.transform.origin
+	var tween := create_tween()
+	tween.set_trans(Tween.TRANS_SINE)
+	tween.tween_method(
+		func(t: float): node.transform.origin = start.lerp(target, t) + Vector3(0, sin(t * PI) * HOP_HEIGHT, 0),
+		0.0, 1.0, HOP_DURATION
+	)
+	await tween.finished
+
+
+func _slide_tween(node: Node3D, target: Vector3) -> void:
+	var start: Vector3 = node.transform.origin
+	var duration := clampf(start.distance_to(target) / SLIDE_SPEED, SLIDE_MIN_DURATION, SLIDE_MAX_DURATION)
+	var tween := create_tween()
+	tween.set_trans(Tween.TRANS_SINE)
+	tween.set_ease(Tween.EASE_IN_OUT)
+	tween.tween_property(node, "transform:origin", target, duration)
+	await tween.finished
+
+
+func _swap_promoted_piece(square: Vector2i, code: int) -> void:
+	var old_node: Node3D = piece_nodes[square.x][square.y]
+	var new_piece := spawn_piece(code, square.x, square.y)
+	$Pieces.add_child(new_piece)
+	piece_nodes[square.x][square.y] = new_piece
+	if old_node:
+		old_node.queue_free()
+
+
+func _capture_square_if_occupied(square: Vector2i) -> void:
+	var occupant: Node3D = piece_nodes[square.x][square.y]
+	if occupant == null:
+		return
+	piece_nodes[square.x][square.y] = null
+	_knock_over_and_remove(occupant)
+
+
+func _knock_over_and_remove(piece: Node3D) -> void:
+	var push_dir := Vector3(randf_range(-1.0, 1.0), 0.0, randf_range(-1.0, 1.0))
+	if push_dir.length() < 0.01:
+		push_dir = Vector3.RIGHT
+	piece.knock_over(push_dir.normalized())
+	await get_tree().create_timer(CAPTURE_SETTLE_TIME).timeout
+	if not is_instance_valid(piece):
+		return
+	await _fade_out(piece)
+	if is_instance_valid(piece):
+		piece.queue_free()
+
+
+func _fade_out(piece: Node3D) -> void:
+	var meshes := get_all_meshes(piece)
+	for mesh in meshes:
+		if mesh.material_override is StandardMaterial3D:
+			mesh.material_override.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		if mesh.mesh:
+			for i in mesh.mesh.get_surface_count():
+				var mat := mesh.get_surface_override_material(i)
+				if mat is StandardMaterial3D:
+					mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	var tween := create_tween()
+	tween.tween_method(
+		func(alpha: float): _set_piece_alpha(meshes, alpha),
+		1.0, 0.0, FADE_DURATION
+	)
+	await tween.finished
+
+
+func _set_piece_alpha(meshes: Array[MeshInstance3D], alpha: float) -> void:
+	for mesh in meshes:
+		if not is_instance_valid(mesh):
+			continue
+		if mesh.material_override is StandardMaterial3D:
+			mesh.material_override.albedo_color.a = alpha
+		if mesh.mesh:
+			for i in mesh.mesh.get_surface_count():
+				var mat := mesh.get_surface_override_material(i)
+				if mat is StandardMaterial3D:
+					mat.albedo_color.a = alpha
 
 
 
@@ -565,6 +787,7 @@ func _clear_selection() -> void:
 
 
 func _apply_local_move(from: Vector2i, to: Vector2i) -> void:
+	var old_board: Array = Utilities.board_state.duplicate(true)
 	var code: int = Utilities.board_state[from.x][from.y]
 	var team: int = 1 if code > 0 else -1
 	var type: int = abs(code)
@@ -599,6 +822,7 @@ func _apply_local_move(from: Vector2i, to: Vector2i) -> void:
 		Utilities.board_state[rook_to.x][rook_to.y] = rook_code
 		Utilities.board_state[rook_from.x][rook_from.y] = 0
 
+	@warning_ignore("integer_division") # from.x and to.x always differ by exactly 2 here, so the sum is always even
 	Utilities.en_passant_target = Vector2i((from.x + to.x) / 2, from.y) \
 		if type == 1 and abs(to.x - from.x) == 2 else Vector2i(-1, -1)
 
@@ -606,7 +830,7 @@ func _apply_local_move(from: Vector2i, to: Vector2i) -> void:
 
 	_refresh_game_status()
 
-	load_board(Utilities.board_state)
+	_apply_remote_update(old_board, Utilities.board_state)
 	_update_turn_status()
 	Utilities.send_move()
 

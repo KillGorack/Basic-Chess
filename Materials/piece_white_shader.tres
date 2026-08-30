@@ -1,0 +1,15 @@
+[gd_resource type="ShaderMaterial" format=3 uid="uid://bwrr82qx1o3mu"]
+
+[ext_resource type="Shader" uid="uid://b4kgv1a50jsp" path="res://Materials/Shaders/piece_generic.gdshader" id="1_44olk"]
+
+[resource]
+render_priority = 0
+shader = ExtResource("1_44olk")
+shader_parameter/albedo = Color(0.8901961, 1, 1, 1)
+shader_parameter/roughness = 0.8890000422275
+shader_parameter/metallic = 0.2690000127775
+shader_parameter/edge_color = Color(0, 0, 1, 1)
+shader_parameter/edge_metallic = 1.0
+shader_parameter/edge_roughness = 0.0
+shader_parameter/edge_strength = 1.0000000475
+shader_parameter/edge_sharpness = 3.0

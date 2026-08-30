@@ -2,22 +2,53 @@
 
 [ext_resource type="Script" uid="uid://cltxesnrppvc1" path="res://Objects/_scripts/game_camera.gd" id="1_0sf2q"]
 [ext_resource type="Script" uid="uid://cqmc7fnjlia0y" path="res://Objects/_scripts/Chessboard.gd" id="1_127ne"]
-[ext_resource type="Texture2D" uid="uid://dtj6dax1p2nwk" path="res://Materials/Textures/overcast_soil_puresky_4k.exr" id="1_miosk"]
+[ext_resource type="Shader" uid="uid://chcq46svnua46" path="res://Materials/Shaders/sky.gdshader" id="2_yedwl"]
+[ext_resource type="Texture2D" uid="uid://bcdf1kyuotubo" path="res://Materials/Standard/standard_noise_2K.png" id="3_exx3d"]
 [ext_resource type="Material" uid="uid://dgpqndx3xrpiq" path="res://Materials/Wood_Dark.tres" id="4_6knds"]
+[ext_resource type="Texture2D" uid="uid://crufojvbc02mn" path="res://Materials/Standard/PARTICLE_ALPHA.png" id="4_vusan"]
 [ext_resource type="Material" uid="uid://bak12qnpedl1j" path="res://Materials/Gold.tres" id="5_6knds"]
+[ext_resource type="Script" uid="uid://gtp6tuq8tvcl" path="res://Objects/_scripts/sun_orbit.gd" id="5_exx3d"]
 [ext_resource type="Texture2D" uid="uid://duy5vsgnhvcrj" path="res://UserInterface/images/CP_Back.png" id="6_127ne"]
 [ext_resource type="Material" uid="uid://6g2awtq37f2k" path="res://Materials/Wood_Light.tres" id="6_kh8as"]
-[ext_resource type="Material" uid="uid://q4inqry5jnhf" path="res://Materials/piece_black.tres" id="7_yedwl"]
 
-[sub_resource type="PanoramaSkyMaterial" id="PanoramaSkyMaterial_85qmd"]
-panorama = ExtResource("1_miosk")
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_0rem2"]
+shader = ExtResource("2_yedwl")
+shader_parameter/sky_top_color = Color(0.51319635, 0.55616623, 0.7278104, 1)
+shader_parameter/sky_horizon_color = Color(0.79732156, 0.606513, 0.50890225, 1)
+shader_parameter/ground_color = Color(0.22134113, 0.16245908, 0.11599592, 1)
+shader_parameter/sun_angle = 15.0000007125
+shader_parameter/cloud_density = 0.954000045315
+shader_parameter/cloud_speed_1 = 0.010000000475
+shader_parameter/cloud_speed_2 = 0.0630000029925
+shader_parameter/cloud_dir_1 = Vector2(1, 1)
+shader_parameter/cloud_dir_2 = Vector2(-1, 1)
+shader_parameter/cloud_aspect = 0.20000000810297
+shader_parameter/cloud_color_1 = Color(0, 0, 0, 1)
+shader_parameter/cloud_color_2 = Color(0, 0, 0, 1)
+shader_parameter/noise_texture = ExtResource("3_exx3d")
+shader_parameter/sun_texture = ExtResource("4_vusan")
+shader_parameter/cloud_scale_1 = Vector2(0.5, 0.5)
+shader_parameter/cloud_scale_2 = Vector2(1, 1)
+shader_parameter/ground_texture_scale = Vector2(0.25, 0.25)
+shader_parameter/ground_texture_speed = Vector2(0.01, 0.02)
+shader_parameter/ground_texture_strength = 1.0
+shader_parameter/ground_texture_color = Color(0.07683643, 0.0621562, 0.044538125, 1)
 
 [sub_resource type="Sky" id="Sky_miosk"]
-sky_material = SubResource("PanoramaSkyMaterial_85qmd")
+sky_material = SubResource("ShaderMaterial_0rem2")
 
 [sub_resource type="Environment" id="Environment_0sf2q"]
 background_mode = 2
+background_color = Color(1, 1, 1, 1)
+background_energy_multiplier = 1.4
 sky = SubResource("Sky_miosk")
+ambient_light_source = 3
+ambient_light_color = Color(1, 1, 1, 1)
+reflected_light_source = 2
+tonemap_mode = 3
+tonemap_exposure = 2.0
+tonemap_white = 2.0
+volumetric_fog_density = 0.001
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_127ne"]
 size = Vector3(4.568512, 0.55529785, 4.5620117)
@@ -238,8 +269,11 @@ current = true
 target_position = Vector3(0, 0, -100)
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=9168452]
-transform = Transform3D(0.9275394, 0.1060791, -0.35835454, 0.18301268, 0.70710677, 0.6830128, 0.32584828, -0.69910467, 0.63645554, 0, 2.1885026, 0)
+transform = Transform3D(0.25881904, -3.239805e-08, 0.9659258, -0.9659258, -4.222196e-08, 0.25881904, 3.239805e-08, -1, -4.222196e-08, 0, 2.1885026, 0)
+light_energy = 4.0
 shadow_enabled = true
+script = ExtResource("5_exx3d")
+degrees_per_second = 1.0
 
 [node name="Geometry" type="Node3D" parent="." unique_id=433251284]
 
@@ -261,7 +295,6 @@ material_override = ExtResource("6_kh8as")
 mesh = SubResource("ArrayMesh_627y2")
 
 [node name="Bottom" type="MeshInstance3D" parent="Geometry" unique_id=1025731904]
-material_override = ExtResource("7_yedwl")
 mesh = SubResource("ArrayMesh_sbh4h")
 
 [node name="Pieces" type="Node3D" parent="." unique_id=1159871862]
@@ -456,9 +489,9 @@ visible = false
 anchors_preset = 4
 anchor_top = 0.5
 anchor_bottom = 0.5
-offset_top = -104.5
-offset_right = 340.0
-offset_bottom = 104.5
+offset_top = -145.25
+offset_right = 344.0
+offset_bottom = 145.25
 grow_vertical = 2
 texture = ExtResource("6_127ne")
 
@@ -470,11 +503,14 @@ offset_right = 325.0
 offset_bottom = 194.0
 text = "Controls
 
-Ctrl + Left Mouse Drag — Rotate camera
-Ctrl + Double Click — Recenter view
-Ctrl + Mouse Wheel — Zoom
-F12 — Screenshot
-F1 — Toggle this help"
+Ctrl + Left Mouse Drag: Rotate camera
+Ctrl + Double Click: Recenter view
+Ctrl + Mouse Wheel: Zoom
+F12: Screenshot
+F1: Toggle this help
+
+Left Click: Piece activation
+Long Left Click: Move (green markers)"
 
 [connection signal="pressed" from="UI/HBoxContainer/btn_Queue" to="." method="into_queue"]
 [connection signal="pressed" from="UI/btn_Exit" to="." method="exit_game"]
