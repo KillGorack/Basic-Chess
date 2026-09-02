@@ -3,7 +3,15 @@ shader_type sky;
 uniform vec3 sky_top_color : source_color = vec3(0.385, 0.454, 0.55);
 uniform vec3 sky_horizon_color : source_color = vec3(0.646, 0.655, 0.67);
 uniform vec3 ground_color : source_color = vec3(0.2, 0.169, 0.133);
-uniform float sun_angle : hint_range(0.0, 180.0) = 45.0;
+// Elevation of the sun disc above the horizon — set this directly, fully
+// independent of whatever angle the actual DirectionalLight3D is tilted to
+// for shadow/bounce-lighting purposes.
+uniform float sun_angle : hint_range(0.0, 90.0) = 15.0;
+// Compass-direction (azimuth) of the sun, as a horizontal XZ vector. Set
+// every frame by sun_orbit.gd from the light's own horizontal facing, so
+// the sun disc sweeps around the sky in sync with the light's rotation —
+// while sun_angle above keeps its height independent of the light's tilt.
+uniform vec2 sun_azimuth_dir = vec2(1.0, 0.0);
 uniform float cloud_density : hint_range(0.0, 1.0) = 0.5;
 uniform float cloud_speed_1 : hint_range(0.0, 2.0) = 0.1;
 uniform float cloud_speed_2 : hint_range(0.0, 2.0) = 0.07;
@@ -71,19 +79,13 @@ vec3 get_sky_color(vec3 dir) {
     // Blend both cloud layers
     vec3 final_color = max(cloud_tint_1, cloud_tint_2);
 
-    // Sun disk
-    // Sun texture overlay — follows an actual scene DirectionalLight3D when
-    // one is set to feed the sky (its "Sky Mode" set to "Light and Sky" or
-    // "Sky Only" in the inspector), via Godot's built-in LIGHT0_* sky-shader
-    // inputs. Falls back to the manual sun_angle uniform otherwise, so this
-    // still works fine with no light hooked up at all.
-    vec3 sun_direction;
-    if (LIGHT0_ENABLED) {
-        sun_direction = LIGHT0_DIRECTION;
-    } else {
-        float sun_alt = radians(sun_angle);
-        sun_direction = normalize(vec3(cos(sun_alt), sin(sun_alt), 0.0));
-    }
+    // Sun disk — azimuth (compass direction) comes from the light via
+    // sun_azimuth_dir, elevation comes purely from sun_angle. The two are
+    // independent: this lets the light sit at whatever tilt looks best for
+    // shadows while the visual sun keeps whatever height you dial in here.
+    float sun_el = radians(sun_angle);
+    vec2 az = length(sun_azimuth_dir) > 0.0001 ? normalize(sun_azimuth_dir) : vec2(1.0, 0.0);
+    vec3 sun_direction = normalize(vec3(az.x * cos(sun_el), sin(sun_el), az.y * cos(sun_el)));
     float sun_size = 0.025; // Controls sun size (try adjusting for your texture)
     float angle_to_sun = acos(dot(normalize(dir), sun_direction));
 

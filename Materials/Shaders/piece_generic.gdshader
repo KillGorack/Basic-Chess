@@ -4,6 +4,7 @@ shader_type spatial;
 // assign this to a ShaderMaterial, set albedo to white or black (or anything
 // else), and it works for every piece type.
 uniform vec3 albedo : source_color = vec3(1.0, 1.0, 1.0);
+uniform sampler2D albedo_texture : source_color, hint_default_white;
 uniform float roughness : hint_range(0.0, 1.0) = 0.4;
 uniform float metallic : hint_range(0.0, 1.0) = 0.0;
 
@@ -23,7 +24,7 @@ uniform float edge_strength : hint_range(0.0, 3.0) = 1.0;
 uniform float edge_sharpness : hint_range(0.1, 8.0) = 3.0; // higher = wider band caught by the effect
 
 void fragment() {
-	ALBEDO = albedo;
+	ALBEDO = albedo * texture(albedo_texture, UV).rgb;
 	ROUGHNESS = roughness;
 	METALLIC = metallic;
 
