@@ -67,11 +67,14 @@ const SLIDE_MAX_DURATION := 0.55
 const CAPTURE_SETTLE_TIME := 1.0
 const FADE_DURATION := 0.6
 
-@onready var btn_toQueue = $UI/HBoxContainer/btn_Queue
-@onready var txt_Name = $UI/HBoxContainer/txt_Name
-@onready var lbl_status = $UI/Status_Back/lbl_Status
+@onready var join_create_panel: Control = $UI/JoinCreate
+@onready var enter_queue_panel: Control = $UI/JoinCreate/margin/HBoxContainer/EnterQueue
+@onready var join_queue_panel: Control = $UI/JoinCreate/margin/HBoxContainer/JoinQueue
+@onready var txt_Name = $UI/JoinCreate/margin/HBoxContainer/EnterQueue/txt_Name
+@onready var lbl_status = $UI/lbl_Status
 @onready var lbl_opponent_status: Label = $UI/lbl_OpponentStatus
-@onready var tree_game_queue = $UI/tree_queue
+@onready var tree_game_queue = $UI/JoinCreate/margin/HBoxContainer/JoinQueue/tree_queue
+@onready var btn_join_game: TextureButton = $UI/JoinCreate/margin/HBoxContainer/JoinQueue/btn_Queue
 @onready var camera: Camera3D = $CameraRig/Camera3D
 
 @onready var promotion_picker: Control = $UI/PromotionPicker
@@ -82,10 +85,13 @@ const FADE_DURATION := 0.6
 	2: $UI/PromotionPicker/Center/Panel/VBoxContainer/HBoxContainer/btn_Knight,
 }
 
-@onready var btn_offer_draw: Button = $UI/MarginContainer/DrawControls/btn_OfferDraw
-@onready var btn_accept_draw: Button = $UI/MarginContainer/DrawControls/btn_AcceptDraw
-@onready var btn_decline_draw: Button = $UI/MarginContainer/DrawControls/btn_DeclineDraw
-@onready var btn_new_game: Button = $UI/MarginContainer/DrawControls/btn_NewGame
+@onready var chat_log: RichTextLabel = $UI/ChatPanel/ChatLog
+@onready var chat_input: LineEdit = $UI/ChatPanel/ChatInput
+
+@onready var btn_offer_draw: TextureButton = $UI/MarginContainer/DrawControls/btn_OfferDraw
+@onready var btn_accept_draw: TextureButton = $UI/MarginContainer/DrawControls/btn_AcceptDraw
+@onready var btn_decline_draw: TextureButton = $UI/MarginContainer/DrawControls/btn_DeclineDraw
+@onready var btn_new_game: TextureButton = $UI/MarginContainer/DrawControls/btn_NewGame
 @onready var help_panel: Control = $UI/HelpPanel
 
 const CURSOR_SCENE := preload("res://Objects/cursor.tscn")
@@ -114,7 +120,9 @@ func _ready() -> void:
 	Utilities.signal_matched.connect(_on_matched)
 	Utilities.signal_game_state_updated.connect(_on_game_state_updated)
 	Utilities.signal_screenshot_saved.connect(_on_screenshot_saved)
-	tree_game_queue.item_activated.connect(_on_row_double_clicked)
+	Utilities.signal_chat_updated.connect(_on_chat_log_updated)
+	chat_input.text_submitted.connect(_on_chat_submitted)
+	btn_join_game.pressed.connect(_join_selected_game)
 	for piece_type: int in promotion_buttons:
 		promotion_buttons[piece_type].pressed.connect(_on_promotion_button_pressed.bind(piece_type))
 	btn_offer_draw.pressed.connect(_offer_draw)
@@ -125,9 +133,7 @@ func _ready() -> void:
 	# We don't yet know if this user is mid-game, already queued, or neither —
 	# hide the queue UI and ask the server before showing anything that might
 	# have to be immediately swapped out.
-	btn_toQueue.visible = false
-	txt_Name.visible = false
-	tree_game_queue.visible = false
+	join_create_panel.visible = false
 	lbl_status.text = "Checking game status, please wait..."
 	Utilities.determine_startup_state()
 
@@ -144,11 +150,12 @@ func _on_screenshot_saved(path: String) -> void:
 		lbl_status.text = Utilities.Last_Message
 
 
-func _on_row_double_clicked() -> void:
+func _join_selected_game() -> void:
 	var item: TreeItem = tree_game_queue.get_selected()
-	if item:
-		var game_id = item.get_metadata(0)
-		Utilities.set_match(game_id)
+	if not item:
+		return
+	var game_id = item.get_metadata(0)
+	Utilities.set_match(game_id)
 	lbl_status.text = Utilities.Last_Message
 
 
@@ -156,8 +163,7 @@ func _on_row_double_clicked() -> void:
 
 
 func _on_user_added_to_queue():
-	btn_toQueue.visible = false
-	txt_Name.visible = false
+	enter_queue_panel.visible = false
 	lbl_status.text = Utilities.Last_Message
 
 
@@ -166,14 +172,11 @@ func _on_user_added_to_queue():
 
 func _on_update_queue(data):
 	tree_game_queue.clear()
-	tree_game_queue.set_column_title(0, "Name")
-	tree_game_queue.set_column_title(1, "ID")
 	var root = tree_game_queue.create_item()
 	var my_queue_entry: Dictionary = {}
 	for game in data["data"]:
 		var item = tree_game_queue.create_item(root)
 		item.set_text(0, str(game.game_name))
-		item.set_text(1, str(int(game.ID)))
 		item.set_metadata(0, int(game.ID))
 		if str(game.get("user_a_key", "")) == Utilities.user_key:
 			my_queue_entry = game
@@ -185,17 +188,15 @@ func _on_update_queue(data):
 # Called once the startup queue-check has come back. If check_for_match also
 # lands a match, _on_matched/_enter_game will override this immediately after.
 func _resolve_startup_state(my_queue_entry: Dictionary) -> void:
+	join_create_panel.visible = true
+	join_queue_panel.visible = true
 	if not my_queue_entry.is_empty():
 		Utilities.app_state = "queued"
-		btn_toQueue.visible = false
-		txt_Name.visible = false
-		tree_game_queue.visible = true
+		enter_queue_panel.visible = false
 		lbl_status.text = "You're already queued as \"%s\" — waiting for an opponent..." % str(my_queue_entry.game_name)
 	else:
 		Utilities.app_state = "idle"
-		btn_toQueue.visible = true
-		txt_Name.visible = true
-		tree_game_queue.visible = true
+		enter_queue_panel.visible = true
 		lbl_status.text = "Enter a name and queue up for a new game!"
 
 
@@ -222,21 +223,27 @@ func _enter_game(row: Dictionary, color: int) -> void:
 	_opponent_seconds_since_seen = -1
 	_apply_state_json(row.get('game_state_json', ""))
 	Utilities.set_move_history_from_json(row.get('move_history_json', ""))
-	btn_toQueue.visible = false
-	txt_Name.visible = false
-	tree_game_queue.visible = false
+	join_create_panel.visible = false
 	load_board(Utilities.board_state)
 	_update_turn_status()
 
 
 func _on_game_state_updated(data: Dictionary) -> void:
-	var previous_turn := Utilities.white_to_move
+	# A response can arrive after we've already applied a local move (its
+	# request was still queued behind an earlier, slower one). Anything
+	# reporting fewer moves than we already have locally predates that move —
+	# applying it would revert the board and then re-push the reverted state
+	# to the server as truth. Discard it instead of trusting it blindly.
+	var incoming_history = JSON.parse_string(data.get('move_history_json', ""))
+	if typeof(incoming_history) == TYPE_ARRAY and incoming_history.size() < Utilities.move_history.size():
+		return
 	var old_board: Array = Utilities.board_state.duplicate(true)
 	_apply_state_json(data.get('game_state_json', ""))
 	Utilities.set_move_history_from_json(data.get('move_history_json', ""))
+	Utilities.set_chat_log_from_json(data.get('chat_log_json', ""))
 	var secs_val = data.get('opponent_seconds_since_seen')
 	_opponent_seconds_since_seen = int(secs_val) if secs_val != null else -1
-	if Utilities.white_to_move != previous_turn:
+	if Utilities.board_state != old_board:
 		_apply_remote_update(old_board, Utilities.board_state)
 		_clear_selection()
 	_update_turn_status()
@@ -351,9 +358,9 @@ func _on_new_game_pressed() -> void:
 	_opponent_seconds_since_seen = -1
 	_clear_selection()
 	load_board(Utilities.board_state)
-	btn_toQueue.visible = true
-	txt_Name.visible = true
-	tree_game_queue.visible = true
+	join_create_panel.visible = true
+	enter_queue_panel.visible = true
+	join_queue_panel.visible = true
 	_update_turn_status() # hides the draw/new-game buttons now that app_state is back to "idle"
 	lbl_status.text = "Enter a name and queue up for a new game!"
 
@@ -689,6 +696,17 @@ func _show_promotion_picker(team: int) -> int:
 # INPUT / MOVE HANDLING ========================================
 
 func _unhandled_input(event: InputEvent) -> void:
+	if event.is_action_pressed("ui_cancel") and chat_input.visible:
+		_close_chat_input()
+		get_viewport().set_input_as_handled()
+		return
+	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_SLASH:
+		# Only reaches here if no focused Control already ate the keystroke
+		# (e.g. typing "/" into txt_Name), so this is safe to treat as "open chat".
+		if Utilities.app_state == "in_game" and not chat_input.visible:
+			_open_chat_input()
+			get_viewport().set_input_as_handled()
+			return
 	if event.is_action_pressed("Halp"):
 		help_panel.visible = not help_panel.visible
 		return
@@ -706,6 +724,34 @@ func _unhandled_input(event: InputEvent) -> void:
 	_handle_square_click(square)
 
 
+func _open_chat_input() -> void:
+	chat_input.visible = true
+	chat_input.text = ""
+	chat_input.grab_focus()
+
+
+func _close_chat_input() -> void:
+	chat_input.visible = false
+	chat_input.text = ""
+	chat_input.release_focus()
+
+
+func _on_chat_submitted(text: String) -> void:
+	var message := text.strip_edges()
+	if not message.is_empty():
+		Utilities.send_chat_message(message)
+	_close_chat_input()
+
+
+func _on_chat_log_updated() -> void:
+	chat_log.clear()
+	for entry: Dictionary in Utilities.chat_log:
+		var is_white: bool = int(entry.get("color", 0)) == 1
+		var who := "White" if is_white else "Black"
+		var name_color := "white" if is_white else "gray"
+		chat_log.append_text("[color=%s][b]%s:[/b][/color] %s\n" % [name_color, who, str(entry.get("text", ""))])
+
+
 func _is_my_turn() -> bool:
 	return (Utilities.white_to_move and Utilities.my_color == 1) \
 		or (not Utilities.white_to_move and Utilities.my_color == -1)
@@ -717,7 +763,12 @@ func _raycast_to_square(screen_pos: Vector2) -> Vector2i:
 	var from: Vector3 = camera.project_ray_origin(screen_pos)
 	var dir: Vector3 = camera.project_ray_normal(screen_pos)
 	var space_state := get_world_3d().direct_space_state
+	# Board only (layer 2) — pieces are RigidBody3D on the default layer, and
+	# hitting a piece's collision mesh instead of the flat board gives a hit
+	# point off the square's center, which world_to_board can round to the
+	# wrong square, especially once physics has nudged a piece off-center.
 	var query := PhysicsRayQueryParameters3D.create(from, from + dir * 2000.0)
+	query.collision_mask = 2
 	var result := space_state.intersect_ray(query)
 	if result.is_empty():
 		return Vector2i(-1, -1)

@@ -13,6 +13,15 @@ var request_busy: bool = false
 var user_key: String = ""
 var Last_Message: String = ""
 
+var chat_log: Array = []
+var _pending_chat_message: String = ""
+signal signal_chat_updated()
+
+# How often the heartbeat polls the server. In-game is faster than the lobby
+# since that's also what chat responsiveness rides on — tune this to taste.
+const LOBBY_POLL_INTERVAL := 5.0
+const IN_GAME_POLL_INTERVAL := 3.0
+
 var requests_queue: Array = []
 
 signal signal_add_local_to_queue()
@@ -76,7 +85,7 @@ func _ready() -> void:
 	}
 	# --- HEARTBEAT SETUP ---
 	heartbeat_timer = Timer.new()
-	heartbeat_timer.wait_time = 5
+	heartbeat_timer.wait_time = LOBBY_POLL_INTERVAL
 	heartbeat_timer.autostart = true
 	heartbeat_timer.one_shot = false
 	add_child(heartbeat_timer)
@@ -190,6 +199,27 @@ func send_move():
 		"data": {}
 	})
 	requestor()
+
+# Piggybacks on the same update_game_state call moves already use — no
+# separate chat endpoint, just one more optional field on a request that's
+# already being sent/polled regularly.
+func send_chat_message(text: String) -> void:
+	if text.is_empty():
+		return
+	_pending_chat_message = text
+	requests_queue.append({
+		"type": "update_game_state",
+		"data": {}
+	})
+	requestor()
+
+func set_chat_log_from_json(json_string: String) -> void:
+	if json_string.is_empty():
+		return
+	var parsed = JSON.parse_string(json_string)
+	if typeof(parsed) == TYPE_ARRAY:
+		chat_log = parsed
+		signal_chat_updated.emit()
 
 func record_move(from: Vector2i, to: Vector2i, piece: int, captured: int, promoted: bool) -> void:
 	move_history.append({
@@ -310,6 +340,9 @@ func _send_update_game_state():
 		"move_history_json": _move_history_json(),
 		"formidentifier": "alacarte\\game\\chessAPI"
 	}
+	if not _pending_chat_message.is_empty():
+		post_data["chat_message"] = _pending_chat_message
+		_pending_chat_message = ""
 	var post_data_encoded = encode_dict_string(post_data)
 	var full_url = url + "?" + encode_dict_string(api_params)
 	var headers = ["Content-Type: application/x-www-form-urlencoded"]
@@ -335,6 +368,7 @@ func _send_get_game_state():
 
 
 func _on_heartbeat_timeout():
+	heartbeat_timer.wait_time = IN_GAME_POLL_INTERVAL if app_state == "in_game" else LOBBY_POLL_INTERVAL
 	match app_state:
 		"checking":
 			check_for_match()

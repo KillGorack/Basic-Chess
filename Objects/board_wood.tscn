@@ -10,6 +10,10 @@
 [ext_resource type="Script" uid="uid://gtp6tuq8tvcl" path="res://Objects/_scripts/sun_orbit.gd" id="5_exx3d"]
 [ext_resource type="Texture2D" uid="uid://duy5vsgnhvcrj" path="res://UserInterface/images/CP_Back.png" id="6_127ne"]
 [ext_resource type="Material" uid="uid://6g2awtq37f2k" path="res://Materials/Wood_Light.tres" id="6_kh8as"]
+[ext_resource type="Texture2D" uid="uid://cch5vrnegdtil" path="res://UserInterface/images/button_normal.png" id="11_ojxrt"]
+[ext_resource type="Texture2D" uid="uid://cylkt3xutg4xg" path="res://UserInterface/images/button_pressed.png" id="12_dg2we"]
+[ext_resource type="Texture2D" uid="uid://dk8eoabdi5f61" path="res://UserInterface/images/button_hover.png" id="13_q2phv"]
+[ext_resource type="Texture2D" uid="uid://cod8boybecq5o" path="res://UserInterface/images/button_disabled.png" id="14_osr0l"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_0rem2"]
 shader = ExtResource("2_yedwl")
@@ -50,7 +54,8 @@ tonemap_mode = 3
 sdfgi_y_scale = 2
 glow_enabled = true
 glow_normalized = true
-glow_strength = 1.26
+glow_intensity = 0.5
+glow_strength = 0.5
 glow_bloom = 1.0
 fog_enabled = true
 fog_aerial_perspective = 0.947
@@ -253,6 +258,8 @@ blend_shape_mode = 0
 shadow_mesh = SubResource("ArrayMesh_x3ehg")
 
 [node name="Chessboard" type="StaticBody3D" unique_id=1476238333]
+collision_layer = 2
+collision_mask = 0
 script = ExtResource("1_127ne")
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=1878840028]
@@ -325,71 +332,58 @@ offset_right = 359.0
 offset_bottom = -27.0
 grow_vertical = 0
 
-[node name="txt_Name" type="LineEdit" parent="UI/HBoxContainer" unique_id=117620667]
-custom_minimum_size = Vector2(200, 0)
-layout_mode = 2
-
-[node name="btn_Queue" type="Button" parent="UI/HBoxContainer" unique_id=252913160]
-custom_minimum_size = Vector2(150, 0)
-layout_mode = 2
-text = "Enter Queue"
-
-[node name="Status_Back" type="TextureRect" parent="UI" unique_id=1001588968]
-anchors_preset = 12
+[node name="lbl_Status" type="Label" parent="UI" unique_id=2139696662]
+anchors_preset = 2
 anchor_top = 1.0
-anchor_right = 1.0
 anchor_bottom = 1.0
-offset_top = -22.0
-grow_horizontal = 2
-grow_vertical = 0
-size_flags_horizontal = 3
-mouse_filter = 2
-texture = ExtResource("6_127ne")
-expand_mode = 1
-
-[node name="lbl_Status" type="Label" parent="UI/Status_Back" unique_id=2139696662]
-layout_mode = 1
-anchors_preset = 12
-anchor_top = 1.0
-anchor_right = 1.0
-anchor_bottom = 1.0
-offset_left = 3.0
-offset_top = -23.0
-grow_horizontal = 2
+offset_left = 5.0
+offset_top = -27.0
+offset_right = 576.0
+offset_bottom = -4.0
 grow_vertical = 0
 text = "Status: "
 
 [node name="lbl_OpponentStatus" type="Label" parent="UI" unique_id=500000020]
-anchors_preset = 12
-anchor_top = 1.0
-anchor_right = 1.0
-anchor_bottom = 1.0
-offset_left = 3.0
-offset_top = -44.0
-offset_bottom = -22.0
-grow_horizontal = 2
-grow_vertical = 0
-
-[node name="tree_queue" type="Tree" parent="UI" unique_id=598896647]
 anchors_preset = 3
 anchor_left = 1.0
 anchor_top = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = -178.0
-offset_top = -255.0
+offset_left = -542.0
+offset_top = -27.0
 offset_right = -5.0
-offset_bottom = -27.0
+offset_bottom = -4.0
 grow_horizontal = 0
 grow_vertical = 0
-theme_override_font_sizes/font_size = 12
-theme_override_font_sizes/title_button_font_size = 12
-columns = 2
-column_titles_visible = true
-allow_search = false
-hide_folding = true
-hide_root = true
-select_mode = 1
+horizontal_alignment = 2
+
+[node name="ChatPanel" type="VBoxContainer" parent="UI" unique_id=500000021]
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 3.0
+offset_top = -220.0
+offset_right = 300.0
+offset_bottom = -66.0
+grow_vertical = 0
+theme_override_constants/separation = 4
+
+[node name="ChatLog" type="RichTextLabel" parent="UI/ChatPanel" unique_id=500000022]
+custom_minimum_size = Vector2(0, 130)
+layout_mode = 2
+size_flags_vertical = 3
+mouse_filter = 2
+theme_override_colors/default_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 3
+bbcode_enabled = true
+scroll_following = true
+
+[node name="ChatInput" type="LineEdit" parent="UI/ChatPanel" unique_id=500000023]
+visible = false
+layout_mode = 2
+placeholder_text = "Type a message and press Enter..."
+max_length = 200
 
 [node name="MarginContainer" type="MarginContainer" parent="UI" unique_id=773351759]
 anchors_preset = 5
@@ -406,25 +400,89 @@ layout_mode = 2
 theme_override_constants/separation = 10
 alignment = 1
 
-[node name="btn_OfferDraw" type="Button" parent="UI/MarginContainer/DrawControls" unique_id=500000013]
+[node name="btn_OfferDraw" type="TextureButton" parent="UI/MarginContainer/DrawControls" unique_id=500000013]
 visible = false
+custom_minimum_size = Vector2(138, 40)
+custom_maximum_size = Vector2(138, 40)
 layout_mode = 2
+texture_normal = ExtResource("11_ojxrt")
+texture_pressed = ExtResource("12_dg2we")
+texture_hover = ExtResource("13_q2phv")
+texture_disabled = ExtResource("14_osr0l")
+
+[node name="Label" type="Label" parent="UI/MarginContainer/DrawControls/btn_OfferDraw" unique_id=1603513153]
+custom_minimum_size = Vector2(138, 40)
+custom_maximum_size = Vector2(138, 40)
+layout_mode = 0
+offset_right = 138.0
+offset_bottom = 40.0
+theme_override_font_sizes/font_size = 14
 text = "Offer Draw"
+horizontal_alignment = 1
+vertical_alignment = 1
 
-[node name="btn_AcceptDraw" type="Button" parent="UI/MarginContainer/DrawControls" unique_id=500000014]
+[node name="btn_AcceptDraw" type="TextureButton" parent="UI/MarginContainer/DrawControls" unique_id=500000014]
 visible = false
+custom_minimum_size = Vector2(138, 40)
+custom_maximum_size = Vector2(138, 40)
 layout_mode = 2
+texture_normal = ExtResource("11_ojxrt")
+texture_pressed = ExtResource("12_dg2we")
+texture_hover = ExtResource("13_q2phv")
+texture_disabled = ExtResource("14_osr0l")
+
+[node name="Label" type="Label" parent="UI/MarginContainer/DrawControls/btn_AcceptDraw" unique_id=509760794]
+custom_minimum_size = Vector2(138, 40)
+custom_maximum_size = Vector2(138, 40)
+layout_mode = 0
+offset_right = 138.0
+offset_bottom = 40.0
+theme_override_font_sizes/font_size = 14
 text = "Accept Draw"
+horizontal_alignment = 1
+vertical_alignment = 1
 
-[node name="btn_DeclineDraw" type="Button" parent="UI/MarginContainer/DrawControls" unique_id=500000015]
+[node name="btn_DeclineDraw" type="TextureButton" parent="UI/MarginContainer/DrawControls" unique_id=500000015]
 visible = false
+custom_minimum_size = Vector2(138, 40)
+custom_maximum_size = Vector2(138, 40)
 layout_mode = 2
+texture_normal = ExtResource("11_ojxrt")
+texture_pressed = ExtResource("12_dg2we")
+texture_hover = ExtResource("13_q2phv")
+texture_disabled = ExtResource("14_osr0l")
+
+[node name="Label" type="Label" parent="UI/MarginContainer/DrawControls/btn_DeclineDraw" unique_id=102083085]
+custom_minimum_size = Vector2(138, 40)
+custom_maximum_size = Vector2(138, 40)
+layout_mode = 0
+offset_right = 138.0
+offset_bottom = 40.0
+theme_override_font_sizes/font_size = 14
 text = "Decline"
+horizontal_alignment = 1
+vertical_alignment = 1
 
-[node name="btn_NewGame" type="Button" parent="UI/MarginContainer/DrawControls" unique_id=500000016]
+[node name="btn_NewGame" type="TextureButton" parent="UI/MarginContainer/DrawControls" unique_id=500000016]
 visible = false
+custom_minimum_size = Vector2(138, 40)
+custom_maximum_size = Vector2(138, 40)
 layout_mode = 2
+texture_normal = ExtResource("11_ojxrt")
+texture_pressed = ExtResource("12_dg2we")
+texture_hover = ExtResource("13_q2phv")
+texture_disabled = ExtResource("14_osr0l")
+
+[node name="Label" type="Label" parent="UI/MarginContainer/DrawControls/btn_NewGame" unique_id=1322416817]
+custom_minimum_size = Vector2(138, 40)
+custom_maximum_size = Vector2(138, 40)
+layout_mode = 0
+offset_right = 138.0
+offset_bottom = 40.0
+theme_override_font_sizes/font_size = 14
 text = "New Game"
+horizontal_alignment = 1
+vertical_alignment = 1
 
 [node name="PromotionPicker" type="Control" parent="UI" unique_id=500000001]
 visible = false
@@ -487,19 +545,7 @@ custom_minimum_size = Vector2(96, 96)
 layout_mode = 2
 expand_icon = true
 
-[node name="btn_Exit" type="Button" parent="UI" unique_id=500000017]
-anchors_preset = 1
-anchor_left = 1.0
-anchor_right = 1.0
-offset_left = -85.0
-offset_top = 10.0
-offset_right = -10.0
-offset_bottom = 43.0
-grow_horizontal = 0
-text = "Exit"
-
 [node name="HelpPanel" type="TextureRect" parent="UI" unique_id=1181666308]
-visible = false
 anchors_preset = 4
 anchor_top = 0.5
 anchor_bottom = 0.5
@@ -526,5 +572,122 @@ F1: Toggle this help
 Left Click: Piece activation
 Long Left Click: Move (green markers)"
 
-[connection signal="pressed" from="UI/HBoxContainer/btn_Queue" to="." method="into_queue"]
-[connection signal="pressed" from="UI/btn_Exit" to="." method="exit_game"]
+[node name="btn_quit" type="TextureButton" parent="UI" unique_id=1601074969]
+custom_minimum_size = Vector2(138, 40)
+custom_maximum_size = Vector2(138, 40)
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -235.0
+offset_top = 10.0
+offset_right = -10.0
+offset_bottom = 75.0
+grow_horizontal = 0
+texture_normal = ExtResource("11_ojxrt")
+texture_pressed = ExtResource("12_dg2we")
+texture_hover = ExtResource("13_q2phv")
+texture_disabled = ExtResource("14_osr0l")
+
+[node name="Label" type="Label" parent="UI/btn_quit" unique_id=1467772799]
+custom_minimum_size = Vector2(138, 40)
+custom_maximum_size = Vector2(138, 40)
+layout_mode = 0
+offset_right = 214.0
+offset_bottom = 61.0
+theme_override_font_sizes/font_size = 14
+text = "Quit Game"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="JoinCreate" type="TextureRect" parent="UI" unique_id=492648787]
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -140.0
+offset_top = -122.0
+offset_right = 170.0
+offset_bottom = 152.0
+grow_horizontal = 2
+grow_vertical = 2
+texture = ExtResource("6_127ne")
+
+[node name="margin" type="MarginContainer" parent="UI/JoinCreate" unique_id=1073027800]
+layout_mode = 0
+offset_right = 310.0
+offset_bottom = 274.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 15
+theme_override_constants/margin_top = 15
+theme_override_constants/margin_right = 15
+theme_override_constants/margin_bottom = 15
+
+[node name="HBoxContainer" type="HBoxContainer" parent="UI/JoinCreate/margin" unique_id=397931818]
+layout_mode = 2
+
+[node name="EnterQueue" type="VBoxContainer" parent="UI/JoinCreate/margin/HBoxContainer" unique_id=1986944163]
+layout_mode = 2
+
+[node name="txt_Name" type="LineEdit" parent="UI/JoinCreate/margin/HBoxContainer/EnterQueue" unique_id=117620667]
+custom_minimum_size = Vector2(138, 0)
+layout_mode = 2
+
+[node name="btn_Queue" type="TextureButton" parent="UI/JoinCreate/margin/HBoxContainer/EnterQueue" unique_id=252913160]
+custom_minimum_size = Vector2(138, 40)
+custom_maximum_size = Vector2(138, 40)
+layout_mode = 2
+texture_normal = ExtResource("11_ojxrt")
+texture_pressed = ExtResource("12_dg2we")
+texture_hover = ExtResource("13_q2phv")
+texture_disabled = ExtResource("14_osr0l")
+
+[node name="Label" type="Label" parent="UI/JoinCreate/margin/HBoxContainer/EnterQueue/btn_Queue" unique_id=1408333058]
+custom_minimum_size = Vector2(138, 40)
+custom_maximum_size = Vector2(138, 40)
+layout_mode = 0
+offset_right = 138.0
+offset_bottom = 40.0
+theme_override_font_sizes/font_size = 14
+text = "Enter Queue"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="JoinQueue" type="VBoxContainer" parent="UI/JoinCreate/margin/HBoxContainer" unique_id=103881345]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="tree_queue" type="Tree" parent="UI/JoinCreate/margin/HBoxContainer/JoinQueue" unique_id=598896647]
+custom_minimum_size = Vector2(0, 200)
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+theme_override_font_sizes/title_button_font_size = 12
+allow_search = false
+hide_folding = true
+hide_root = true
+select_mode = 1
+
+[node name="btn_Queue" type="TextureButton" parent="UI/JoinCreate/margin/HBoxContainer/JoinQueue" unique_id=222656726]
+custom_minimum_size = Vector2(138, 40)
+custom_maximum_size = Vector2(138, 40)
+layout_mode = 2
+size_flags_horizontal = 8
+texture_normal = ExtResource("11_ojxrt")
+texture_pressed = ExtResource("12_dg2we")
+texture_hover = ExtResource("13_q2phv")
+texture_disabled = ExtResource("14_osr0l")
+
+[node name="Label" type="Label" parent="UI/JoinCreate/margin/HBoxContainer/JoinQueue/btn_Queue" unique_id=28357414]
+custom_minimum_size = Vector2(138, 40)
+custom_maximum_size = Vector2(138, 40)
+layout_mode = 0
+offset_right = 138.0
+offset_bottom = 40.0
+theme_override_font_sizes/font_size = 14
+text = "Join game"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[connection signal="pressed" from="UI/btn_quit" to="." method="exit_game"]
+[connection signal="pressed" from="UI/JoinCreate/margin/HBoxContainer/EnterQueue/btn_Queue" to="." method="into_queue"]

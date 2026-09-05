@@ -4,14 +4,13 @@
 [ext_resource type="Script" uid="uid://nweunxbh4a5c" path="res://Objects/Pieces/_scripts/piece_handler.gd" id="1_xl04c"]
 [ext_resource type="Material" uid="uid://rca7tiytjlen" path="res://Materials/felt.tres" id="4_3y8fx"]
 
+[sub_resource type="ConvexPolygonShape3D" id="ConvexPolygonShape3D_snjbd"]
+points = PackedVector3Array(0.15555558, 0.043703616, 0.012640162, -0.14624025, 0.008808047, -0.033115096, -0.14590637, 0.009355749, 0.034596708, -0.026959253, 0.5038688, -0.01902119, 0.03645435, 0.035799727, -0.15396824, 0.028516287, 0.035799727, 0.15555558, 0.068236895, 0.46420026, 0.012640162, -0.042835377, 0.45629638, 0.060268532, -0.09046375, 0.043703616, -0.13015406, 0.12364084, 0.011780633, -0.08483829, 0.028516287, 0.45629638, -0.06664956, -0.09046375, 0.035799727, 0.1317111, -0.06664956, 0.4483428, -0.034897316, 0.122885615, 0.013245133, 0.08589918, 0.028516287, 0.45629638, 0.068236895, 0.1317111, 0.035799727, -0.09046375, 0.1317111, 0.035799727, 0.09205108, -0.14603019, 0.043703616, 0.060268532, -0.034897316, 0.4483428, -0.06664956, -0.14603019, 0.043703616, -0.0587115, -0.025562307, 0.008909703, 0.14776562, -0.05592537, 0.008017743, -0.13915566, 0.068236895, 0.45629638, -0.026959253, -0.06664956, 0.46420026, 0.020578224, -0.01902119, 0.051657215, -0.15396824, -0.026959253, 0.035799727, 0.15555558, 0.09205108, 0.035799727, 0.1317111, -0.15396824, 0.051657215, -0.01902119, 0.099958844, 0.051657215, -0.12221599, 0.060268532, 0.45629638, 0.04439241, 0.14776562, 0.008909703, -0.025562307, 0.14761752, 0.051657215, -0.050773438)
+
 [sub_resource type="CylinderMesh" id="CylinderMesh_snjbd"]
 top_radius = 0.139
 bottom_radius = 0.139
 height = 0.005
-
-[sub_resource type="CylinderShape3D" id="CylinderShape3D_xl04c"]
-height = 0.5001831
-radius = 0.15039063
 
 [node name="Pawn" type="RigidBody3D" unique_id=719035469]
 script = ExtResource("1_xl04c")
@@ -19,12 +18,11 @@ script = ExtResource("1_xl04c")
 [node name="PIECE" type="MeshInstance3D" parent="." unique_id=1284512289]
 mesh = ExtResource("1_ha6uo")
 
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=2035693947]
+visible = false
+shape = SubResource("ConvexPolygonShape3D_snjbd")
+
 [node name="felt" type="MeshInstance3D" parent="." unique_id=725674376]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.002475746, 0)
 material_override = ExtResource("4_3y8fx")
 mesh = SubResource("CylinderMesh_snjbd")
-
-[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=10334826]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.25021362, 0)
-visible = false
-shape = SubResource("CylinderShape3D_xl04c")
