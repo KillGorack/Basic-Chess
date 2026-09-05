@@ -9,6 +9,11 @@ extends Node3D
 @export var rotate_speed := 0.1
 @export var zoom_speed := 0.1
 
+# Slow ambient orbit for the lobby/queue screen — toggled by Chessboard.gd
+# whenever the JoinCreate panel is showing, off during actual gameplay.
+@export var auto_spin_enabled := false
+@export var auto_spin_degrees_per_second := 3.0
+
 var yaw := 0.0
 var pitch := 45.0
 var focal_point := Vector3.ZERO
@@ -52,6 +57,8 @@ func _recenter_to_mouse():
 
 
 func _process(delta):
+	if auto_spin_enabled:
+		yaw += auto_spin_degrees_per_second * delta
 	focal_point = focal_point.lerp(focal_point_target, delta * 5.0)
 	var yaw_rad = deg_to_rad(yaw)
 	var pitch_rad = deg_to_rad(pitch)

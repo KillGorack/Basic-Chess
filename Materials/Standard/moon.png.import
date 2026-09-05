@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://tsq6j2xjb7vq"
-path="res://.godot/imported/BLACK_ICON.png-264847aaa94a30d4e1052c20eb84af48.ctex"
+uid="uid://dq315qfu6wv1u"
+path="res://.godot/imported/moon.png-ea905b034064454655dc3c3b85e04daa.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://UserInterface/images/BLACK_ICON.png"
-dest_files=["res://.godot/imported/BLACK_ICON.png-264847aaa94a30d4e1052c20eb84af48.ctex"]
+source_file="res://Materials/Standard/moon.png"
+dest_files=["res://.godot/imported/moon.png-ea905b034064454655dc3c3b85e04daa.ctex"]
 
 [params]
 
@@ -37,4 +37,4 @@ process/normal_map_invert_y=false
 process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
 process/size_limit=0
-detect_3d/compress_to=1
+detect_3d/compress_to=0

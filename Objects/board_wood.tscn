@@ -5,15 +5,21 @@
 [ext_resource type="Shader" uid="uid://chcq46svnua46" path="res://Materials/Shaders/sky.gdshader" id="2_yedwl"]
 [ext_resource type="Texture2D" uid="uid://bcdf1kyuotubo" path="res://Materials/Standard/standard_noise_2K.png" id="3_exx3d"]
 [ext_resource type="Material" uid="uid://dgpqndx3xrpiq" path="res://Materials/Wood_Dark.tres" id="4_6knds"]
-[ext_resource type="Texture2D" uid="uid://crufojvbc02mn" path="res://Materials/Standard/PARTICLE_ALPHA.png" id="4_vusan"]
 [ext_resource type="Material" uid="uid://bak12qnpedl1j" path="res://Materials/Gold.tres" id="5_6knds"]
 [ext_resource type="Script" uid="uid://gtp6tuq8tvcl" path="res://Objects/_scripts/sun_orbit.gd" id="5_exx3d"]
 [ext_resource type="Texture2D" uid="uid://duy5vsgnhvcrj" path="res://UserInterface/images/CP_Back.png" id="6_127ne"]
 [ext_resource type="Material" uid="uid://6g2awtq37f2k" path="res://Materials/Wood_Light.tres" id="6_kh8as"]
+[ext_resource type="Texture2D" uid="uid://dq315qfu6wv1u" path="res://Materials/Standard/moon.png" id="10_s00v7"]
 [ext_resource type="Texture2D" uid="uid://cch5vrnegdtil" path="res://UserInterface/images/button_normal.png" id="11_ojxrt"]
 [ext_resource type="Texture2D" uid="uid://cylkt3xutg4xg" path="res://UserInterface/images/button_pressed.png" id="12_dg2we"]
 [ext_resource type="Texture2D" uid="uid://dk8eoabdi5f61" path="res://UserInterface/images/button_hover.png" id="13_q2phv"]
 [ext_resource type="Texture2D" uid="uid://cod8boybecq5o" path="res://UserInterface/images/button_disabled.png" id="14_osr0l"]
+[ext_resource type="Texture2D" uid="uid://d2nunxv8nroh6" path="res://UserInterface/images/menuback.png" id="15_dg2we"]
+[ext_resource type="Texture2D" uid="uid://oxusa025tmxg" path="res://UserInterface/icons/Gear.png" id="16_q2phv"]
+[ext_resource type="AudioStream" uid="uid://ck474xl84hlyw" path="res://Sounds/Music/Piano 2.mp3" id="17_ambient"]
+[ext_resource type="AudioStream" uid="uid://csqntu3tr48ro" path="res://Sounds/Music/Piano.mp3" id="18_piano1"]
+[ext_resource type="AudioStream" uid="uid://buv3iqbd60p72" path="res://Sounds/Music/Eastern Artic Dubstep.MP3" id="19_dubstep"]
+[ext_resource type="AudioStream" uid="uid://cs7y2lq4lb7c3" path="res://Sounds/Music/Rabble.mp3" id="20_rabble"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_0rem2"]
 shader = ExtResource("2_yedwl")
@@ -31,7 +37,7 @@ shader_parameter/cloud_aspect = 0.20000000810297
 shader_parameter/cloud_color_1 = Color(0, 0, 0, 1)
 shader_parameter/cloud_color_2 = Color(0, 0, 0, 1)
 shader_parameter/noise_texture = ExtResource("3_exx3d")
-shader_parameter/sun_texture = ExtResource("4_vusan")
+shader_parameter/sun_texture = ExtResource("10_s00v7")
 shader_parameter/cloud_scale_1 = Vector2(0.5, 0.5)
 shader_parameter/cloud_scale_2 = Vector2(1, 1)
 shader_parameter/ground_texture_scale = Vector2(0.25, 0.25)
@@ -257,10 +263,56 @@ _surfaces = [{
 blend_shape_mode = 0
 shadow_mesh = SubResource("ArrayMesh_x3ehg")
 
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_dg2we"]
+content_margin_left = 4.0
+content_margin_top = 4.0
+content_margin_right = 4.0
+content_margin_bottom = 4.0
+bg_color = Color(0.1, 0.1, 0.1, 0.6)
+border_width_bottom = 2
+border_color = Color(0, 0, 0, 0.6)
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
+corner_detail = 5
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_q2phv"]
+content_margin_left = 4.0
+content_margin_top = 4.0
+content_margin_right = 4.0
+content_margin_bottom = 5.0
+bg_color = Color(0.1, 0.1, 0.1, 0.6)
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
+corner_detail = 5
+
+[sub_resource type="StyleBoxLine" id="StyleBoxLine_dg2we"]
+content_margin_left = 4.0
+content_margin_top = 0.0
+content_margin_right = 4.0
+content_margin_bottom = 0.0
+color = Color(0.27387273, 0.27387276, 0.2738727, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_osr0l"]
+content_margin_left = 8.0
+content_margin_top = 4.0
+content_margin_right = 8.0
+content_margin_bottom = 4.0
+bg_color = Color(0.1, 0.1, 0.1, 0.6)
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
+corner_detail = 5
+
 [node name="Chessboard" type="StaticBody3D" unique_id=1476238333]
-collision_layer = 2
+collision_layer = 3
 collision_mask = 0
 script = ExtResource("1_127ne")
+music_tracks = Array[AudioStream]([ExtResource("18_piano1"), ExtResource("17_ambient"), ExtResource("19_dubstep"), ExtResource("20_rabble")])
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=1878840028]
 environment = SubResource("Environment_0sf2q")
@@ -317,6 +369,17 @@ mesh = SubResource("ArrayMesh_627y2")
 
 [node name="Bottom" type="MeshInstance3D" parent="Geometry" unique_id=1025731904]
 mesh = SubResource("ArrayMesh_sbh4h")
+
+[node name="AmbientMusic" type="AudioStreamPlayer" parent="." unique_id=950000001]
+stream = ExtResource("17_ambient")
+volume_db = -50.0
+autoplay = true
+
+[node name="SfxMove" type="AudioStreamPlayer" parent="." unique_id=950000002]
+volume_db = -6.0
+
+[node name="SfxLand" type="AudioStreamPlayer" parent="." unique_id=950000003]
+volume_db = -6.0
 
 [node name="Pieces" type="Node3D" parent="." unique_id=1159871862]
 
@@ -546,6 +609,7 @@ layout_mode = 2
 expand_icon = true
 
 [node name="HelpPanel" type="TextureRect" parent="UI" unique_id=1181666308]
+visible = false
 anchors_preset = 4
 anchor_top = 0.5
 anchor_bottom = 0.5
@@ -600,6 +664,7 @@ horizontal_alignment = 1
 vertical_alignment = 1
 
 [node name="JoinCreate" type="TextureRect" parent="UI" unique_id=492648787]
+visible = false
 anchors_preset = 8
 anchor_left = 0.5
 anchor_top = 0.5
@@ -611,14 +676,12 @@ offset_right = 170.0
 offset_bottom = 152.0
 grow_horizontal = 2
 grow_vertical = 2
-texture = ExtResource("6_127ne")
+texture = ExtResource("15_dg2we")
 
 [node name="margin" type="MarginContainer" parent="UI/JoinCreate" unique_id=1073027800]
 layout_mode = 0
 offset_right = 310.0
 offset_bottom = 274.0
-grow_horizontal = 2
-grow_vertical = 2
 theme_override_constants/margin_left = 15
 theme_override_constants/margin_top = 15
 theme_override_constants/margin_right = 15
@@ -633,6 +696,7 @@ layout_mode = 2
 [node name="txt_Name" type="LineEdit" parent="UI/JoinCreate/margin/HBoxContainer/EnterQueue" unique_id=117620667]
 custom_minimum_size = Vector2(138, 0)
 layout_mode = 2
+theme_override_styles/normal = SubResource("StyleBoxFlat_dg2we")
 
 [node name="btn_Queue" type="TextureButton" parent="UI/JoinCreate/margin/HBoxContainer/EnterQueue" unique_id=252913160]
 custom_minimum_size = Vector2(138, 40)
@@ -659,14 +723,19 @@ layout_mode = 2
 size_flags_horizontal = 3
 
 [node name="tree_queue" type="Tree" parent="UI/JoinCreate/margin/HBoxContainer/JoinQueue" unique_id=598896647]
-custom_minimum_size = Vector2(0, 200)
+custom_minimum_size = Vector2(0, 192)
 layout_mode = 2
 theme_override_font_sizes/font_size = 12
 theme_override_font_sizes/title_button_font_size = 12
+theme_override_styles/panel = SubResource("StyleBoxFlat_q2phv")
 allow_search = false
 hide_folding = true
 hide_root = true
 select_mode = 1
+
+[node name="HSeparator" type="HSeparator" parent="UI/JoinCreate/margin/HBoxContainer/JoinQueue" unique_id=1341645016]
+layout_mode = 2
+theme_override_styles/separator = SubResource("StyleBoxLine_dg2we")
 
 [node name="btn_Queue" type="TextureButton" parent="UI/JoinCreate/margin/HBoxContainer/JoinQueue" unique_id=222656726]
 custom_minimum_size = Vector2(138, 40)
@@ -688,6 +757,158 @@ theme_override_font_sizes/font_size = 14
 text = "Join game"
 horizontal_alignment = 1
 vertical_alignment = 1
+
+[node name="SettingsPanel" type="TextureRect" parent="UI" unique_id=900000001]
+visible = false
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -140.0
+offset_top = -122.0
+offset_right = 170.0
+offset_bottom = 152.0
+grow_horizontal = 2
+grow_vertical = 2
+texture = ExtResource("15_dg2we")
+
+[node name="MarginContainer" type="MarginContainer" parent="UI/SettingsPanel" unique_id=301988961]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 15
+theme_override_constants/margin_top = 15
+theme_override_constants/margin_right = 15
+theme_override_constants/margin_bottom = 15
+
+[node name="VBoxContainer" type="VBoxContainer" parent="UI/SettingsPanel/MarginContainer" unique_id=549626767]
+layout_mode = 2
+
+[node name="OptionButton" type="OptionButton" parent="UI/SettingsPanel/MarginContainer/VBoxContainer" unique_id=1385052519]
+layout_mode = 2
+theme_override_styles/normal = SubResource("StyleBoxFlat_osr0l")
+selected = 0
+item_count = 3
+popup/item_0/text = "Sounds"
+popup/item_0/id = 0
+popup/item_1/text = "Visuals"
+popup/item_1/id = 1
+popup/item_2/text = "Key Bindings"
+popup/item_2/id = 2
+
+[node name="HSeparator" type="HSeparator" parent="UI/SettingsPanel/MarginContainer/VBoxContainer" unique_id=2138158346]
+layout_mode = 2
+
+[node name="SoundsPanel" type="Control" parent="UI/SettingsPanel/MarginContainer/VBoxContainer" unique_id=900000010]
+custom_minimum_size = Vector2(0, 150)
+layout_mode = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="UI/SettingsPanel/MarginContainer/VBoxContainer/SoundsPanel" unique_id=900000020]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 6
+
+[node name="lbl_Music" type="Label" parent="UI/SettingsPanel/MarginContainer/VBoxContainer/SoundsPanel/VBoxContainer" unique_id=900000021]
+layout_mode = 2
+text = " Music"
+
+[node name="MusicOption" type="OptionButton" parent="UI/SettingsPanel/MarginContainer/VBoxContainer/SoundsPanel/VBoxContainer" unique_id=900000022]
+layout_mode = 2
+
+[node name="MusicVolumeSlider" type="HSlider" parent="UI/SettingsPanel/MarginContainer/VBoxContainer/SoundsPanel/VBoxContainer" unique_id=900000024]
+layout_mode = 2
+max_value = 1.0
+step = 0.001
+value = 0.25
+
+[node name="HSeparator" type="HSeparator" parent="UI/SettingsPanel/MarginContainer/VBoxContainer/SoundsPanel/VBoxContainer" unique_id=2099699897]
+layout_mode = 2
+
+[node name="lbl_EffectsVolume" type="Label" parent="UI/SettingsPanel/MarginContainer/VBoxContainer/SoundsPanel/VBoxContainer" unique_id=900000025]
+layout_mode = 2
+text = " Game Effects Volume"
+
+[node name="EffectsVolumeSlider" type="HSlider" parent="UI/SettingsPanel/MarginContainer/VBoxContainer/SoundsPanel/VBoxContainer" unique_id=900000026]
+layout_mode = 2
+max_value = 1.0
+step = 0.01
+value = 0.5
+
+[node name="VisualsPanel" type="Control" parent="UI/SettingsPanel/MarginContainer/VBoxContainer" unique_id=900000012]
+visible = false
+custom_minimum_size = Vector2(0, 200)
+layout_mode = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="UI/SettingsPanel/MarginContainer/VBoxContainer/VisualsPanel" unique_id=900000030]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 6
+
+[node name="lbl_sky" type="Label" parent="UI/SettingsPanel/MarginContainer/VBoxContainer/VisualsPanel/VBoxContainer" unique_id=1641683069]
+layout_mode = 2
+text = " Sky"
+
+[node name="SkyOption" type="OptionButton" parent="UI/SettingsPanel/MarginContainer/VBoxContainer/VisualsPanel/VBoxContainer" unique_id=900000032]
+layout_mode = 2
+
+[node name="SkyBodyOption" type="OptionButton" parent="UI/SettingsPanel/MarginContainer/VBoxContainer/VisualsPanel/VBoxContainer" unique_id=900000037]
+layout_mode = 2
+
+[node name="HSeparator" type="HSeparator" parent="UI/SettingsPanel/MarginContainer/VBoxContainer/VisualsPanel/VBoxContainer" unique_id=796270100]
+layout_mode = 2
+
+[node name="lbl_Quality" type="Label" parent="UI/SettingsPanel/MarginContainer/VBoxContainer/VisualsPanel/VBoxContainer" unique_id=900000033]
+layout_mode = 2
+text = " Quality"
+
+[node name="QualityToggles" type="HBoxContainer" parent="UI/SettingsPanel/MarginContainer/VBoxContainer/VisualsPanel/VBoxContainer" unique_id=900000038]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="ShadowsToggle" type="CheckBox" parent="UI/SettingsPanel/MarginContainer/VBoxContainer/VisualsPanel/VBoxContainer/QualityToggles" unique_id=900000034]
+layout_mode = 2
+button_pressed = true
+text = "Shadows"
+
+[node name="GlowToggle" type="CheckBox" parent="UI/SettingsPanel/MarginContainer/VBoxContainer/VisualsPanel/VBoxContainer/QualityToggles" unique_id=900000035]
+layout_mode = 2
+button_pressed = true
+text = "Glow / Bloom"
+
+[node name="KeyBindingsPanel" type="Control" parent="UI/SettingsPanel/MarginContainer/VBoxContainer" unique_id=900000014]
+visible = false
+custom_minimum_size = Vector2(0, 150)
+layout_mode = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="UI/SettingsPanel/MarginContainer/VBoxContainer/KeyBindingsPanel" unique_id=900000040]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 6
+
+[node name="SettingsCog" type="TextureButton" parent="UI" unique_id=889838808]
+offset_left = 10.0
+offset_top = 10.0
+offset_right = 60.0
+offset_bottom = 60.0
+texture_normal = ExtResource("16_q2phv")
+ignore_texture_size = true
+stretch_mode = 4
 
 [connection signal="pressed" from="UI/btn_quit" to="." method="exit_game"]
 [connection signal="pressed" from="UI/JoinCreate/margin/HBoxContainer/EnterQueue/btn_Queue" to="." method="into_queue"]

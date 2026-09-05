@@ -70,7 +70,85 @@ signal signal_screenshot_saved(path: String)
 const SAVE_PATH := "user://userdata.save"
 var screenshot_dir: String = ""
 
+# Audio settings, persisted to the player's local user:// data directory so
+# they survive between sessions. -1.0 on the volumes means "nothing saved
+# yet" — the caller should leave its slider/scene default alone in that case
+# rather than snapping it to 0.
+const SETTINGS_PATH := "user://settings.cfg"
+var music_track_index: int = 0
+var music_volume: float = -1.0
+var effects_volume: float = -1.0
+# -1 means "nothing saved yet" — leave the scene's default sky preset alone.
+var sky_preset_index: int = -1
+var sky_body_index: int = -1
+# Booleans don't need a sentinel — true already matches the scene's own
+# authored defaults, so a fresh install with no settings file is correct too.
+var shadows_enabled: bool = true
+var glow_enabled: bool = true
+
+# action name -> physical_keycode. Only holds actions the player has actually
+# rebound away from their project.godot default — nothing here for an action
+# nobody's touched.
+var keybind_overrides: Dictionary = {}
+
+func load_settings() -> void:
+	var cfg := ConfigFile.new()
+	if cfg.load(SETTINGS_PATH) != OK:
+		return
+	music_track_index = cfg.get_value("audio", "music_track_index", music_track_index)
+	music_volume = cfg.get_value("audio", "music_volume", music_volume)
+	effects_volume = cfg.get_value("audio", "effects_volume", effects_volume)
+	sky_preset_index = cfg.get_value("visuals", "sky_preset_index", sky_preset_index)
+	sky_body_index = cfg.get_value("visuals", "sky_body_index", sky_body_index)
+	shadows_enabled = cfg.get_value("visuals", "shadows_enabled", shadows_enabled)
+	glow_enabled = cfg.get_value("visuals", "glow_enabled", glow_enabled)
+	keybind_overrides.clear()
+	if cfg.has_section("keybinds"):
+		for action in cfg.get_section_keys("keybinds"):
+			var physical_keycode: int = cfg.get_value("keybinds", action)
+			keybind_overrides[action] = physical_keycode
+			_apply_keybind(action, physical_keycode)
+
+func save_settings() -> void:
+	var cfg := ConfigFile.new()
+	cfg.set_value("audio", "music_track_index", music_track_index)
+	cfg.set_value("audio", "music_volume", music_volume)
+	cfg.set_value("audio", "effects_volume", effects_volume)
+	cfg.set_value("visuals", "sky_preset_index", sky_preset_index)
+	cfg.set_value("visuals", "sky_body_index", sky_body_index)
+	cfg.set_value("visuals", "shadows_enabled", shadows_enabled)
+	cfg.set_value("visuals", "glow_enabled", glow_enabled)
+	for action in keybind_overrides:
+		cfg.set_value("keybinds", action, keybind_overrides[action])
+	cfg.save(SETTINGS_PATH)
+
+# Registers actions the game needs that aren't in project.godot's Input Map
+# at all yet (as opposed to move_view/Halp/ScreenCapture, which already have
+# a default binding there and just need to be rebindable). Runs before
+# load_settings() ever applies a saved override, so there's always a default
+# event on the action first.
+func _ensure_default_actions() -> void:
+	if not InputMap.has_action("OpenChat"):
+		InputMap.add_action("OpenChat")
+		var ev := InputEventKey.new()
+		ev.physical_keycode = KEY_SLASH
+		InputMap.action_add_event("OpenChat", ev)
+
+func set_keybind(action: String, physical_keycode: int) -> void:
+	keybind_overrides[action] = physical_keycode
+	_apply_keybind(action, physical_keycode)
+	save_settings()
+
+func _apply_keybind(action: String, physical_keycode: int) -> void:
+	if not InputMap.has_action(action):
+		return
+	InputMap.action_erase_events(action)
+	var ev := InputEventKey.new()
+	ev.physical_keycode = physical_keycode
+	InputMap.action_add_event(action, ev)
+
 func _ready() -> void:
+	_ensure_default_actions()
 	_load_or_create_user_key()
 	http_request = HTTPRequest.new()
 	http_request.use_threads = true
@@ -377,6 +455,7 @@ func _on_heartbeat_timeout():
 			get_queue_data()
 			check_for_match()
 		"queued":
+			get_queue_data()
 			check_for_match()
 		"in_game":
 			get_game_state()

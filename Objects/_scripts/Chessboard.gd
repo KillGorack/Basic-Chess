@@ -1,37 +1,17 @@
 extends Node3D
 
-const PIECE_DATA := {
-	"PAWN": {
-		model = preload("res://Objects/Pieces/pawn.tscn"),
-		black = preload("res://Materials/piece_black_shader.tres"),
-		white = preload("res://Materials/piece_white_shader.tres")
-	},
-	"KNIGHT": {
-		model = preload("res://Objects/Pieces/knight.tscn"),
-		black = preload("res://Materials/piece_black_shader.tres"),
-		white = preload("res://Materials/piece_white_shader.tres")
-	},
-	"BISHOP": {
-		model = preload("res://Objects/Pieces/bishop.tscn"),
-		black = preload("res://Materials/piece_black_shader.tres"),
-		white = preload("res://Materials/piece_white_shader.tres")
-	},
-	"ROOK": {
-		model = preload("res://Objects/Pieces/rook.tscn"),
-		black = preload("res://Materials/piece_black_shader.tres"),
-		white = preload("res://Materials/piece_white_shader.tres")
-	},
-	"QUEEN": {
-		model = preload("res://Objects/Pieces/queen.tscn"),
-		black = preload("res://Materials/piece_black_shader.tres"),
-		white = preload("res://Materials/piece_white_shader.tres")
-	},
-	"KING": {
-		model = preload("res://Objects/Pieces/king.tscn"),
-		black = preload("res://Materials/piece_black_shader.tres"),
-		white = preload("res://Materials/piece_white_shader.tres")
-	}
+const PIECE_MODELS := {
+	"PAWN": preload("res://Objects/Pieces/pawn.tscn"),
+	"KNIGHT": preload("res://Objects/Pieces/knight.tscn"),
+	"BISHOP": preload("res://Objects/Pieces/bishop.tscn"),
+	"ROOK": preload("res://Objects/Pieces/rook.tscn"),
+	"QUEEN": preload("res://Objects/Pieces/queen.tscn"),
+	"KING": preload("res://Objects/Pieces/king.tscn")
 }
+
+# Every piece shares the same two materials — no need to repeat them per type.
+const PIECE_MATERIAL_WHITE := preload("res://Materials/piece_white_shader.tres")
+const PIECE_MATERIAL_BLACK := preload("res://Materials/piece_black_shader.tres")
 
 const TYPE_TO_NAME := {
 	1: "PAWN",
@@ -61,21 +41,31 @@ const SQUARE_SIZE: float = 0.57
 
 const HOP_DURATION := 0.5
 const HOP_HEIGHT := 1.0
-const SLIDE_SPEED := 2.2 # world units/sec; distance-scaled so long slides don't look instant
+const SLIDE_SPEED := 2.2
 const SLIDE_MIN_DURATION := 0.18
 const SLIDE_MAX_DURATION := 0.55
-const CAPTURE_SETTLE_TIME := 1.0
+const CAPTURE_SETTLE_TIME := 3.0
 const FADE_DURATION := 0.6
+const MIN_QUEUE_NAME_LENGTH := 3
+
+# Volume sliders map linearly into dB across the full silent-to-unity range
+# instead of through linear_to_db() directly — a plain 0..1 fader run through
+# linear_to_db dumps almost all the audible "getting quieter" range into the
+# last few percent of slider travel, making the rest of the slider feel like
+# it does nothing. Using one continuous curve all the way down to SILENT_DB
+# (rather than stopping at some louder floor and hard-muting only at the very
+# last pixel) keeps that fade-to-silence gradual instead of a sudden cliff.
 
 @onready var join_create_panel: Control = $UI/JoinCreate
 @onready var enter_queue_panel: Control = $UI/JoinCreate/margin/HBoxContainer/EnterQueue
 @onready var join_queue_panel: Control = $UI/JoinCreate/margin/HBoxContainer/JoinQueue
-@onready var txt_Name = $UI/JoinCreate/margin/HBoxContainer/EnterQueue/txt_Name
+@onready var txt_Name: LineEdit = $UI/JoinCreate/margin/HBoxContainer/EnterQueue/txt_Name
 @onready var lbl_status = $UI/lbl_Status
 @onready var lbl_opponent_status: Label = $UI/lbl_OpponentStatus
 @onready var tree_game_queue = $UI/JoinCreate/margin/HBoxContainer/JoinQueue/tree_queue
 @onready var btn_join_game: TextureButton = $UI/JoinCreate/margin/HBoxContainer/JoinQueue/btn_Queue
 @onready var camera: Camera3D = $CameraRig/Camera3D
+@onready var camera_rig = $CameraRig
 
 @onready var promotion_picker: Control = $UI/PromotionPicker
 @onready var promotion_buttons: Dictionary = {
@@ -94,7 +84,93 @@ const FADE_DURATION := 0.6
 @onready var btn_new_game: TextureButton = $UI/MarginContainer/DrawControls/btn_NewGame
 @onready var help_panel: Control = $UI/HelpPanel
 
+@onready var settings_panel: Control = $UI/SettingsPanel
+@onready var settings_cog: TextureButton = $UI/SettingsCog
+@onready var settings_option: OptionButton = $UI/SettingsPanel/MarginContainer/VBoxContainer/OptionButton
+@onready var settings_tabs: Array[Control] = [
+	$UI/SettingsPanel/MarginContainer/VBoxContainer/SoundsPanel,
+	$UI/SettingsPanel/MarginContainer/VBoxContainer/VisualsPanel,
+	$UI/SettingsPanel/MarginContainer/VBoxContainer/KeyBindingsPanel,
+]
+
+@onready var ambient_music: AudioStreamPlayer = $AmbientMusic
+@onready var music_option: OptionButton = $UI/SettingsPanel/MarginContainer/VBoxContainer/SoundsPanel/VBoxContainer/MusicOption
+@onready var music_volume_slider: HSlider = $UI/SettingsPanel/MarginContainer/VBoxContainer/SoundsPanel/VBoxContainer/MusicVolumeSlider
+
+# Populate/reorder this in the editor Inspector (select the Chessboard node) —
+# a hardcoded preload() path here can't survive a file rename the way an
+# Inspector-assigned resource reference does, so tracks are deliberately not
+# listed by path in code. MusicOption's dropdown items are generated from
+# these at runtime (see _ready), reading each track's own filename as its
+# label, so renaming a file changes its displayed title automatically too.
+@export var music_tracks: Array[AudioStream] = []
+
+@onready var sfx_move_player: AudioStreamPlayer = $SfxMove
+@onready var sfx_land_player: AudioStreamPlayer = $SfxLand
+@onready var effects_volume_slider: HSlider = $UI/SettingsPanel/MarginContainer/VBoxContainer/SoundsPanel/VBoxContainer/EffectsVolumeSlider
+
+# Empty until you drag recorded clips in via the Inspector — no sound plays
+# until then, same reasoning as music_tracks above.
+@export var sfx_move: AudioStream
+@export var sfx_land: AudioStream
+
+@onready var sky_material: ShaderMaterial = $WorldEnvironment.environment.sky.sky_material
+@onready var sky_option: OptionButton = $UI/SettingsPanel/MarginContainer/VBoxContainer/VisualsPanel/VBoxContainer/SkyOption
+@onready var sky_body_option: OptionButton = $UI/SettingsPanel/MarginContainer/VBoxContainer/VisualsPanel/VBoxContainer/SkyBodyOption
+
+# The sky shader just billboards whatever's in sun_texture at a fixed
+# angular size — nothing sun-specific about the rendering, so a moon (or
+# anything else with a clean alpha-cutout disc) drops in the same way.
+const SKY_BODIES := [
+	{"name": "Sun", "texture": preload("res://Materials/Standard/PARTICLE_ALPHA.png")},
+	{"name": "Moon", "texture": preload("res://Materials/Standard/moon.png")},
+]
+@onready var shadows_toggle: CheckBox = $UI/SettingsPanel/MarginContainer/VBoxContainer/VisualsPanel/VBoxContainer/QualityToggles/ShadowsToggle
+@onready var glow_toggle: CheckBox = $UI/SettingsPanel/MarginContainer/VBoxContainer/VisualsPanel/VBoxContainer/QualityToggles/GlowToggle
+@onready var world_environment: WorldEnvironment = $WorldEnvironment
+@onready var directional_light: DirectionalLight3D = $DirectionalLight3D
+@onready var keybindings_container: VBoxContainer = $UI/SettingsPanel/MarginContainer/VBoxContainer/KeyBindingsPanel/VBoxContainer
+
+# The only keyboard-driven behaviors in the game — everything else is mouse
+# clicks or UI. Add a row here (and nowhere else) to make a new action
+# rebindable; the UI and persistence both key off this list.
+const REBINDABLE_ACTIONS := [
+	{"action": "move_view", "label": "Camera Modifier"},
+	{"action": "Halp", "label": "Toggle Help"},
+	{"action": "ScreenCapture", "label": "Screenshot"},
+	{"action": "OpenChat", "label": "Open Chat"},
+]
+
+# Non-empty while waiting for the next key press to finish a rebind — see
+# _unhandled_input.
+var _rebinding_action: String = ""
+var _keybind_buttons: Dictionary = {}
+
+# Edit/add presets right here — each is just the sky shader's own three color
+# params, so tweak these to taste and the dropdown below follows automatically.
+const SKY_PRESETS := [
+	{
+		"name": "Day",
+		"top": Color(0.51319635, 0.55616623, 0.7278104),
+		"horizon": Color(0.79732156, 0.606513, 0.50890225),
+		"ground": Color(0.22134113, 0.16245908, 0.11599592),
+	},
+	{
+		"name": "Sunset",
+		"top": Color(0.15, 0.10, 0.35),
+		"horizon": Color(0.95, 0.45, 0.25),
+		"ground": Color(0.25, 0.12, 0.10),
+	},
+	{
+		"name": "Grayscale",
+		"top": Color(0.75, 0.75, 0.75),
+		"horizon": Color(0.55, 0.55, 0.55),
+		"ground": Color(0.18, 0.18, 0.18),
+	},
+]
+
 const CURSOR_SCENE := preload("res://Objects/cursor.tscn")
+const CURSOR_SPECIAL_SCENE := preload("res://Objects/cursor_special.tscn")
 
 var selected_square: Vector2i = Vector2i(-1, -1)
 var legal_targets: Array[Vector2i] = []
@@ -113,6 +189,13 @@ signal promotion_chosen(piece_type: int)
 var _opponent_seconds_since_seen: int = -1
 
 func _ready() -> void:
+	# The .import file's own loop flag is off (default for these tracks), but
+	# we want ambient music to loop regardless — override it on the loaded
+	# resource rather than needing every track re-imported with loop enabled.
+	ambient_music.stream.loop = true
+	_populate_music_options()
+	_populate_sky_options()
+	_populate_sky_body_options()
 	load_board(Utilities.board_state)
 	Utilities.signal_add_local_to_queue.connect(_on_user_added_to_queue)
 	Utilities.signal_update_queue.connect(_on_update_queue)
@@ -129,16 +212,213 @@ func _ready() -> void:
 	btn_accept_draw.pressed.connect(_accept_draw)
 	btn_decline_draw.pressed.connect(_decline_draw)
 	btn_new_game.pressed.connect(_on_new_game_pressed)
+	settings_cog.pressed.connect(_toggle_settings_panel)
+	settings_option.item_selected.connect(_on_settings_tab_selected)
+	# Drive initial tab visibility from the dropdown's own selection rather
+	# than trusting each panel's hand-authored `visible` flag in the .tscn to
+	# already agree with it — those can drift out of sync with a manual scene
+	# edit (as happened once already) with no error to catch it.
+	_on_settings_tab_selected(settings_option.selected)
+	music_option.item_selected.connect(_on_music_track_selected)
+	music_volume_slider.value_changed.connect(_on_music_volume_changed)
+	effects_volume_slider.value_changed.connect(_on_effects_volume_changed)
+	sky_option.item_selected.connect(_on_sky_preset_selected)
+	sky_body_option.item_selected.connect(_on_sky_body_selected)
+	shadows_toggle.toggled.connect(_on_shadows_toggled)
+	glow_toggle.toggled.connect(_on_glow_toggled)
+	_restore_audio_settings()
+	_restore_visual_settings()
+	_populate_keybind_rows()
 
 	# We don't yet know if this user is mid-game, already queued, or neither —
 	# hide the queue UI and ask the server before showing anything that might
 	# have to be immediately swapped out.
-	join_create_panel.visible = false
+	_set_lobby_visible(false)
 	lbl_status.text = "Checking game status, please wait..."
 	Utilities.determine_startup_state()
 
 
+# The lobby camera auto-spins for ambience while you're stuck looking at the
+# queue screen, and stops the moment you're actually in a game.
+func _set_lobby_visible(v: bool) -> void:
+	join_create_panel.visible = v
+	camera_rig.auto_spin_enabled = v
 
+
+func _toggle_settings_panel() -> void:
+	settings_panel.visible = not settings_panel.visible
+
+
+func _on_settings_tab_selected(index: int) -> void:
+	for i in settings_tabs.size():
+		settings_tabs[i].visible = i == index
+
+
+# Builds the dropdown straight from music_tracks — each item's label is the
+# track's own filename, so renaming a file in the editor renames it here too
+# instead of drifting out of sync with a hand-typed list.
+# Applies whatever was saved to user://settings.cfg last session, if
+# anything — a fresh install has no file yet, so Utilities' -1.0 sentinels
+# just leave each slider at its scene-configured default untouched.
+func _restore_audio_settings() -> void:
+	Utilities.load_settings()
+	if Utilities.music_volume >= 0.0:
+		music_volume_slider.value = Utilities.music_volume
+	if Utilities.effects_volume >= 0.0:
+		effects_volume_slider.value = Utilities.effects_volume
+	if Utilities.music_track_index >= 0 and Utilities.music_track_index < music_tracks.size():
+		music_option.select(Utilities.music_track_index)
+		_on_music_track_selected(Utilities.music_track_index)
+
+
+func _restore_visual_settings() -> void:
+	if Utilities.sky_preset_index >= 0 and Utilities.sky_preset_index < SKY_PRESETS.size():
+		sky_option.select(Utilities.sky_preset_index)
+		_on_sky_preset_selected(Utilities.sky_preset_index)
+	if Utilities.sky_body_index >= 0 and Utilities.sky_body_index < SKY_BODIES.size():
+		sky_body_option.select(Utilities.sky_body_index)
+		_on_sky_body_selected(Utilities.sky_body_index)
+	shadows_toggle.button_pressed = Utilities.shadows_enabled
+	directional_light.shadow_enabled = Utilities.shadows_enabled
+	glow_toggle.button_pressed = Utilities.glow_enabled
+	world_environment.environment.glow_enabled = Utilities.glow_enabled
+
+
+func _on_shadows_toggled(enabled: bool) -> void:
+	directional_light.shadow_enabled = enabled
+	Utilities.shadows_enabled = enabled
+	Utilities.save_settings()
+
+
+func _on_glow_toggled(enabled: bool) -> void:
+	world_environment.environment.glow_enabled = enabled
+	Utilities.glow_enabled = enabled
+	Utilities.save_settings()
+
+
+func _populate_sky_options() -> void:
+	sky_option.clear()
+	for i in SKY_PRESETS.size():
+		sky_option.add_item(SKY_PRESETS[i]["name"], i)
+
+
+func _on_sky_preset_selected(index: int) -> void:
+	if index < 0 or index >= SKY_PRESETS.size():
+		return
+	var preset: Dictionary = SKY_PRESETS[index]
+	sky_material.set_shader_parameter("sky_top_color", preset["top"])
+	sky_material.set_shader_parameter("sky_horizon_color", preset["horizon"])
+	sky_material.set_shader_parameter("ground_color", preset["ground"])
+	Utilities.sky_preset_index = index
+	Utilities.save_settings()
+
+
+func _populate_sky_body_options() -> void:
+	sky_body_option.clear()
+	var current: Texture2D = sky_material.get_shader_parameter("sun_texture")
+	for i in SKY_BODIES.size():
+		sky_body_option.add_item(SKY_BODIES[i]["name"], i)
+		if SKY_BODIES[i]["texture"] == current:
+			sky_body_option.select(i)
+
+
+func _on_sky_body_selected(index: int) -> void:
+	if index < 0 or index >= SKY_BODIES.size():
+		return
+	sky_material.set_shader_parameter("sun_texture", SKY_BODIES[index]["texture"])
+	Utilities.sky_body_index = index
+	Utilities.save_settings()
+
+
+func _populate_keybind_rows() -> void:
+	for child in keybindings_container.get_children():
+		child.queue_free()
+	_keybind_buttons.clear()
+	for entry in REBINDABLE_ACTIONS:
+		var action: String = entry["action"]
+		var row := HBoxContainer.new()
+		var label := Label.new()
+		label.text = entry["label"]
+		label.custom_minimum_size = Vector2(140, 0)
+		row.add_child(label)
+		var button := Button.new()
+		button.text = _current_keybind_label(action)
+		button.pressed.connect(_start_rebind.bind(action, button))
+		row.add_child(button)
+		keybindings_container.add_child(row)
+		_keybind_buttons[action] = button
+
+
+func _current_keybind_label(action: String) -> String:
+	for ev in InputMap.action_get_events(action):
+		if ev is InputEventKey:
+			return OS.get_keycode_string(ev.physical_keycode)
+	return "Unbound"
+
+
+func _start_rebind(action: String, button: Button) -> void:
+	_rebinding_action = action
+	button.text = "Press a key..."
+
+
+# Called from _unhandled_input once a key comes in while a rebind is pending.
+func _finish_rebind(physical_keycode: int) -> void:
+	var action := _rebinding_action
+	_rebinding_action = ""
+	Utilities.set_keybind(action, physical_keycode)
+	if _keybind_buttons.has(action):
+		_keybind_buttons[action].text = OS.get_keycode_string(physical_keycode)
+
+
+func _populate_music_options() -> void:
+	music_option.clear()
+	for i in music_tracks.size():
+		var track: AudioStream = music_tracks[i]
+		var label := track.resource_path.get_file().get_basename() if track else "Track %d" % i
+		music_option.add_item(label, i)
+		if track == ambient_music.stream:
+			music_option.select(i)
+
+
+func _on_music_track_selected(index: int) -> void:
+	if index < 0 or index >= music_tracks.size():
+		return
+	ambient_music.stream = music_tracks[index]
+	ambient_music.stream.loop = true
+	ambient_music.play()
+	Utilities.music_track_index = index
+	Utilities.save_settings()
+
+
+# Effectively silent — the actual floor of the volume curve, not just a
+# quiet-but-audible level, so the fade all the way down is gradual and the
+# bottom of the slider is genuinely off.
+const SILENT_DB := -80.0
+
+func _slider_to_db(linear_value: float) -> float:
+	return lerp(SILENT_DB, 0.0, clampf(linear_value, 0.0, 1.0))
+
+
+func _on_music_volume_changed(linear_value: float) -> void:
+	ambient_music.volume_db = _slider_to_db(linear_value)
+	Utilities.music_volume = linear_value
+	Utilities.save_settings()
+
+
+func _on_effects_volume_changed(linear_value: float) -> void:
+	var db := _slider_to_db(linear_value)
+	sfx_move_player.volume_db = db
+	sfx_land_player.volume_db = db
+	Utilities.effects_volume = linear_value
+	Utilities.save_settings()
+
+
+# No-op until a clip is assigned in the Inspector — nothing plays, nothing errors.
+func _play_sfx(player: AudioStreamPlayer, stream: AudioStream) -> void:
+	if stream == null:
+		return
+	player.stream = stream
+	player.play()
 
 
 func _on_screenshot_saved(path: String) -> void:
@@ -159,15 +439,9 @@ func _join_selected_game() -> void:
 	lbl_status.text = Utilities.Last_Message
 
 
-
-
-
 func _on_user_added_to_queue():
 	enter_queue_panel.visible = false
 	lbl_status.text = Utilities.Last_Message
-
-
-
 
 
 func _on_update_queue(data):
@@ -188,7 +462,7 @@ func _on_update_queue(data):
 # Called once the startup queue-check has come back. If check_for_match also
 # lands a match, _on_matched/_enter_game will override this immediately after.
 func _resolve_startup_state(my_queue_entry: Dictionary) -> void:
-	join_create_panel.visible = true
+	_set_lobby_visible(true)
 	join_queue_panel.visible = true
 	if not my_queue_entry.is_empty():
 		Utilities.app_state = "queued"
@@ -198,8 +472,6 @@ func _resolve_startup_state(my_queue_entry: Dictionary) -> void:
 		Utilities.app_state = "idle"
 		enter_queue_panel.visible = true
 		lbl_status.text = "Enter a name and queue up for a new game!"
-
-
 
 
 func _on_set_match(data: Dictionary) -> void:
@@ -223,7 +495,7 @@ func _enter_game(row: Dictionary, color: int) -> void:
 	_opponent_seconds_since_seen = -1
 	_apply_state_json(row.get('game_state_json', ""))
 	Utilities.set_move_history_from_json(row.get('move_history_json', ""))
-	join_create_panel.visible = false
+	_set_lobby_visible(false)
 	load_board(Utilities.board_state)
 	_update_turn_status()
 
@@ -281,18 +553,23 @@ func _format_time_ago(seconds: int) -> String:
 		return "active now"
 	if seconds < 60:
 		return "%d seconds ago" % seconds
+	@warning_ignore("integer_division") # floor division is exactly what a "time ago" display wants
 	var minutes := seconds / 60
 	if minutes < 60:
 		return "%d minute%s ago" % [minutes, "" if minutes == 1 else "s"]
+	@warning_ignore("integer_division")
 	var hours := minutes / 60
 	if hours < 24:
 		return "%d hour%s ago" % [hours, "" if hours == 1 else "s"]
+	@warning_ignore("integer_division")
 	var days := hours / 24
 	if days < 7:
 		return "%d day%s ago" % [days, "" if days == 1 else "s"]
+	@warning_ignore("integer_division")
 	var weeks := days / 7
 	if weeks < 5:
 		return "%d week%s ago" % [weeks, "" if weeks == 1 else "s"]
+	@warning_ignore("integer_division")
 	var months := days / 30
 	return "%d month%s ago" % [months, "" if months == 1 else "s"]
 
@@ -358,7 +635,7 @@ func _on_new_game_pressed() -> void:
 	_opponent_seconds_since_seen = -1
 	_clear_selection()
 	load_board(Utilities.board_state)
-	join_create_panel.visible = true
+	_set_lobby_visible(true)
 	enter_queue_panel.visible = true
 	join_queue_panel.visible = true
 	_update_turn_status() # hides the draw/new-game buttons now that app_state is back to "idle"
@@ -387,16 +664,16 @@ func _apply_state_json(json_string: String) -> void:
 		Utilities.draw_reason = parsed.get("draw_reason", "Stalemate")
 
 
-
 func into_queue():
-	Utilities.get_into_queue(txt_Name.text)
+	var queue_name := txt_Name.text.strip_edges()
+	if queue_name.length() < MIN_QUEUE_NAME_LENGTH:
+		lbl_status.text = "Enter a name with at least %d characters." % MIN_QUEUE_NAME_LENGTH
+		return
+	Utilities.get_into_queue(queue_name)
 
 
 func exit_game() -> void:
 	get_tree().quit()
-
-
-
 
 
 func load_board(state: Array) -> void:
@@ -415,37 +692,27 @@ func load_board(state: Array) -> void:
 			piece_nodes[rank][file] = piece
 
 
-
-
-
 func spawn_piece(code: int, rank: int, file: int) -> Node3D:
 	var type: int = abs(code)
 	var is_white: bool = code > 0
 	var piece_name: String = TYPE_TO_NAME[type]
-	var data: Dictionary = PIECE_DATA[piece_name]
-	var piece: Node3D = data.model.instantiate()
+	var piece: Node3D = PIECE_MODELS[piece_name].instantiate()
 	piece.assign_piece(type, 1 if is_white else -1)
 	if not is_white:
 		piece.rotate_y(PI)
-	apply_piece_material(piece, data, is_white)
+	apply_piece_material(piece, is_white)
 	_isolate_materials(piece)
 	piece.transform.origin = board_to_world(rank, file)
 	return piece
 
 
-
-
-
-func apply_piece_material(piece: Node3D, data: Dictionary, is_white: bool) -> void:
+func apply_piece_material(piece: Node3D, is_white: bool) -> void:
 	var mesh: MeshInstance3D = get_mesh(piece)
 	if mesh == null or mesh.mesh == null:
 		return
-	var material: Material = data.white if is_white else data.black
+	var material: Material = PIECE_MATERIAL_WHITE if is_white else PIECE_MATERIAL_BLACK
 	for i in mesh.mesh.get_surface_count():
 		mesh.set_surface_override_material(i, material)
-
-
-
 
 
 func board_to_world(rank: int, file: int) -> Vector3:
@@ -454,9 +721,6 @@ func board_to_world(rank: int, file: int) -> Vector3:
 		0.0,
 		(rank - 3.5) * SQUARE_SIZE
 	)
-
-
-
 
 
 func get_mesh(node: Node) -> MeshInstance3D:
@@ -490,8 +754,6 @@ func _isolate_materials(piece: Node3D) -> void:
 				var mat := mesh.get_surface_override_material(i)
 				if mat:
 					mesh.set_surface_override_material(i, mat.duplicate())
-
-
 
 
 # MOVEMENT / CAPTURE ANIMATION =================================
@@ -599,9 +861,11 @@ func _hop_tween(node: Node3D, target: Vector3) -> void:
 		0.0, 1.0, HOP_DURATION
 	)
 	await tween.finished
+	_play_sfx(sfx_land_player, sfx_land)
 
 
 func _slide_tween(node: Node3D, target: Vector3) -> void:
+	_play_sfx(sfx_move_player, sfx_move)
 	var start: Vector3 = node.transform.origin
 	var duration := clampf(start.distance_to(target) / SLIDE_SPEED, SLIDE_MIN_DURATION, SLIDE_MAX_DURATION)
 	var tween := create_tween()
@@ -609,6 +873,7 @@ func _slide_tween(node: Node3D, target: Vector3) -> void:
 	tween.set_ease(Tween.EASE_IN_OUT)
 	tween.tween_property(node, "transform:origin", target, duration)
 	await tween.finished
+	_play_sfx(sfx_land_player, sfx_land)
 
 
 func _swap_promoted_piece(square: Vector2i, code: int) -> void:
@@ -643,35 +908,28 @@ func _knock_over_and_remove(piece: Node3D) -> void:
 
 func _fade_out(piece: Node3D) -> void:
 	var meshes := get_all_meshes(piece)
-	for mesh in meshes:
-		if mesh.material_override is StandardMaterial3D:
-			mesh.material_override.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-		if mesh.mesh:
-			for i in mesh.mesh.get_surface_count():
-				var mat := mesh.get_surface_override_material(i)
-				if mat is StandardMaterial3D:
-					mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	_for_each_piece_material(meshes, func(mat: StandardMaterial3D): mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA)
 	var tween := create_tween()
 	tween.tween_method(
-		func(alpha: float): _set_piece_alpha(meshes, alpha),
+		func(alpha: float): _for_each_piece_material(meshes, func(mat: StandardMaterial3D): mat.albedo_color.a = alpha),
 		1.0, 0.0, FADE_DURATION
 	)
 	await tween.finished
 
 
-func _set_piece_alpha(meshes: Array[MeshInstance3D], alpha: float) -> void:
+# Runs callback on every StandardMaterial3D actually in use across these
+# meshes — each mesh's material_override, plus any per-surface override.
+func _for_each_piece_material(meshes: Array[MeshInstance3D], callback: Callable) -> void:
 	for mesh in meshes:
 		if not is_instance_valid(mesh):
 			continue
 		if mesh.material_override is StandardMaterial3D:
-			mesh.material_override.albedo_color.a = alpha
+			callback.call(mesh.material_override)
 		if mesh.mesh:
 			for i in mesh.mesh.get_surface_count():
 				var mat := mesh.get_surface_override_material(i)
 				if mat is StandardMaterial3D:
-					mat.albedo_color.a = alpha
-
-
+					callback.call(mat)
 
 
 # PROMOTION PICKER ================================================
@@ -691,16 +949,18 @@ func _show_promotion_picker(team: int) -> int:
 	return chosen
 
 
-
-
 # INPUT / MOVE HANDLING ========================================
 
 func _unhandled_input(event: InputEvent) -> void:
+	if _rebinding_action != "" and event is InputEventKey and event.pressed and not event.echo:
+		_finish_rebind(event.physical_keycode)
+		get_viewport().set_input_as_handled()
+		return
 	if event.is_action_pressed("ui_cancel") and chat_input.visible:
 		_close_chat_input()
 		get_viewport().set_input_as_handled()
 		return
-	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_SLASH:
+	if event.is_action_pressed("OpenChat"):
 		# Only reaches here if no focused Control already ate the keystroke
 		# (e.g. typing "/" into txt_Name), so this is safe to treat as "open chat".
 		if Utilities.app_state == "in_game" and not chat_input.visible:
@@ -814,12 +1074,25 @@ func _select_square(rank: int, file: int) -> void:
 	selected_square = Vector2i(rank, file)
 	legal_targets = ChessRules.get_true_legal_moves(Utilities.board_state, rank, file)
 	var code: int = Utilities.board_state[rank][file]
+	# Targets that do more than relocate the selected piece (castling jumps a
+	# rook too, en passant captures a pawn that isn't even on the target
+	# square, promotion turns the pawn into something else) get the special
+	# cursor instead of the plain move marker.
+	var special_targets: Array[Vector2i] = []
 	if abs(code) == 6:
-		legal_targets.append_array(_get_castle_targets(1 if code > 0 else -1))
+		var castle_targets := _get_castle_targets(1 if code > 0 else -1)
+		legal_targets.append_array(castle_targets)
+		special_targets.append_array(castle_targets)
 	elif abs(code) == 1:
-		legal_targets.append_array(ChessRules.get_en_passant_targets(Utilities.board_state, rank, file, Utilities.en_passant_target))
+		var ep_targets := ChessRules.get_en_passant_targets(Utilities.board_state, rank, file, Utilities.en_passant_target)
+		legal_targets.append_array(ep_targets)
+		special_targets.append_array(ep_targets)
+		for target in legal_targets:
+			if target.x == 0 or target.x == 7:
+				special_targets.append(target)
 	for target in legal_targets:
-		var marker := CURSOR_SCENE.instantiate() as Node3D
+		var scene := CURSOR_SPECIAL_SCENE if special_targets.has(target) else CURSOR_SCENE
+		var marker := scene.instantiate() as Node3D
 		add_child(marker)
 		marker.transform.origin = board_to_world(target.x, target.y)
 		highlight_nodes.append(marker)

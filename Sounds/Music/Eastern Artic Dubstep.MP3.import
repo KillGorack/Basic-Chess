@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://buv3iqbd60p72"
+path="res://.godot/imported/Eastern Artic Dubstep.MP3-0f4b62952889a84cb5a6a142e3d66131.mp3str"
+
+[deps]
+
+source_file="res://Sounds/Music/Eastern Artic Dubstep.MP3"
+dest_files=["res://.godot/imported/Eastern Artic Dubstep.MP3-0f4b62952889a84cb5a6a142e3d66131.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

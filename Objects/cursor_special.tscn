@@ -1,0 +1,48 @@
+[gd_scene format=3 uid="uid://b1vxkc26061iy"]
+
+[ext_resource type="Shader" uid="uid://jxqi41w4q8ty" path="res://Materials/Shaders/cursor_special.gdshader" id="1_0ed8m"]
+[ext_resource type="Texture2D" uid="uid://bcdf1kyuotubo" path="res://Materials/Standard/standard_noise_2K.png" id="2_noise"]
+[ext_resource type="Shader" uid="uid://dqwpbsucguf1j" path="res://Materials/Shaders/noise_add.gdshader" id="3_ap1dq"]
+
+[sub_resource type="BoxMesh" id="BoxMesh_r1wdx"]
+size = Vector3(0.57, 0.09611328, 0.57)
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_bc0ym"]
+render_priority = 0
+shader = ExtResource("1_0ed8m")
+shader_parameter/fade_start_y = -0.048
+shader_parameter/fade_end_y = 0.048
+shader_parameter/fade_curve = 3.19400014845512
+shader_parameter/boundry_color = Color(2.454227, 0, 0, 1)
+shader_parameter/noise_texture = ExtResource("2_noise")
+shader_parameter/noise_scale = 0.5
+shader_parameter/noise_scroll_speed = 0.15
+shader_parameter/noise_strength = 1.0
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_hhj3m"]
+size = Vector2(0.57, 0.57)
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_hhj3m"]
+render_priority = 0
+shader = ExtResource("3_ap1dq")
+shader_parameter/noise_texture = ExtResource("2_noise")
+shader_parameter/noise_intensity = 1.0
+shader_parameter/noise_speed_x = 0.5
+shader_parameter/noise_speed_y = 0.5
+shader_parameter/noise_scale = 0.25
+shader_parameter/noise_alpha = 0.25
+shader_parameter/color = Color(1, 0, 0, 1)
+shader_parameter/emission_color = Vector3(1, 0, 0)
+shader_parameter/emission_intensity = 3.0
+
+[node name="Cursor" type="Node3D" unique_id=1365441822]
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=1948754490]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.049556635, 0)
+mesh = SubResource("BoxMesh_r1wdx")
+surface_material_override/0 = SubResource("ShaderMaterial_bc0ym")
+
+[node name="MeshInstance3D2" type="MeshInstance3D" parent="." unique_id=1460549946]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.001, 0)
+mesh = SubResource("PlaneMesh_hhj3m")
+surface_material_override/0 = SubResource("ShaderMaterial_hhj3m")

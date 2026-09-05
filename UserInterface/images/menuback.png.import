@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://b0x83gj1e60k8"
-path="res://.godot/imported/square_bezel.png-43eb9805ead6007f24644c43c2d1e19b.ctex"
+uid="uid://d2nunxv8nroh6"
+path="res://.godot/imported/menuback.png-593dbd483a23de9c24d7ca1479530025.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://UserInterface/images/square_bezel.png"
-dest_files=["res://.godot/imported/square_bezel.png-43eb9805ead6007f24644c43c2d1e19b.ctex"]
+source_file="res://UserInterface/images/menuback.png"
+dest_files=["res://.godot/imported/menuback.png-593dbd483a23de9c24d7ca1479530025.ctex"]
 
 [params]
 
