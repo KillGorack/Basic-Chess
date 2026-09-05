@@ -1,41 +1,23 @@
 extends Node3D
 
-const PIECE_MODELS := {
-	"PAWN": preload("res://Objects/Pieces/pawn.tscn"),
-	"KNIGHT": preload("res://Objects/Pieces/knight.tscn"),
-	"BISHOP": preload("res://Objects/Pieces/bishop.tscn"),
-	"ROOK": preload("res://Objects/Pieces/rook.tscn"),
-	"QUEEN": preload("res://Objects/Pieces/queen.tscn"),
-	"KING": preload("res://Objects/Pieces/king.tscn")
-}
 
-# Every piece shares the same two materials — no need to repeat them per type.
-const PIECE_MATERIAL_WHITE := preload("res://Materials/piece_white_shader.tres")
-const PIECE_MATERIAL_BLACK := preload("res://Materials/piece_black_shader.tres")
+# Each piece's model + both icons now live together in one PieceSettings
+# resource per piece (Objects/Pieces/Resources/*.tres) instead of loose
+# parallel export vars — drag all six .tres files in here, any order.
+# PieceSettings.piece_type matches the board's own 1-6 numbering (see
+# TYPE_TO_NAME's old int codes / chess_rules.gd), which is what
+# _build_piece_by_id keys on below.
+@export var piece_settings: Array[PieceSettings] = []
+@onready var _piece_by_id: Dictionary = _build_piece_by_id()
 
-const TYPE_TO_NAME := {
-	1: "PAWN",
-	2: "KNIGHT",
-	3: "BISHOP",
-	4: "ROOK",
-	5: "QUEEN",
-	6: "KING"
-}
+func _build_piece_by_id() -> Dictionary:
+	var result := {}
+	for settings in piece_settings:
+		result[settings.piece_type] = settings
+	return result
 
-const PROMOTION_ICONS := {
-	1: {
-		5: preload("res://UserInterface/icons/white_queen.png"),
-		4: preload("res://UserInterface/icons/white_rook.png"),
-		3: preload("res://UserInterface/icons/white_bishop.png"),
-		2: preload("res://UserInterface/icons/white_knight.png"),
-	},
-	-1: {
-		5: preload("res://UserInterface/icons/black_queen.png"),
-		4: preload("res://UserInterface/icons/black_rook.png"),
-		3: preload("res://UserInterface/icons/black_bishop.png"),
-		2: preload("res://UserInterface/icons/black_knight.png"),
-	}
-}
+@export var piece_material_white: Material
+@export var piece_material_black: Material
 
 const SQUARE_SIZE: float = 0.57
 
@@ -121,10 +103,13 @@ const MIN_QUEUE_NAME_LENGTH := 3
 # The sky shader just billboards whatever's in sun_texture at a fixed
 # angular size — nothing sun-specific about the rendering, so a moon (or
 # anything else with a clean alpha-cutout disc) drops in the same way.
-const SKY_BODIES := [
-	{"name": "Sun", "texture": preload("res://Materials/Standard/PARTICLE_ALPHA.png")},
-	{"name": "Moon", "texture": preload("res://Materials/Standard/moon.png")},
-]
+# Populate/reorder in the editor Inspector (select the Chessboard node) —
+# same reasoning as music_tracks: a hardcoded preload() path here can't
+# survive a file rename, so it's not listed by path in code. The dropdown's
+# labels are generated from each texture's own filename (see
+# _populate_sky_body_options), so renaming a file renames it in the UI too.
+@export var sky_bodies: Array[Texture2D] = []
+
 @onready var shadows_toggle: CheckBox = $UI/SettingsPanel/MarginContainer/VBoxContainer/VisualsPanel/VBoxContainer/QualityToggles/ShadowsToggle
 @onready var glow_toggle: CheckBox = $UI/SettingsPanel/MarginContainer/VBoxContainer/VisualsPanel/VBoxContainer/QualityToggles/GlowToggle
 @onready var world_environment: WorldEnvironment = $WorldEnvironment
@@ -169,8 +154,8 @@ const SKY_PRESETS := [
 	},
 ]
 
-const CURSOR_SCENE := preload("res://Objects/cursor.tscn")
-const CURSOR_SPECIAL_SCENE := preload("res://Objects/cursor_special.tscn")
+@export var cursor_scene: PackedScene
+@export var cursor_special_scene: PackedScene
 
 var selected_square: Vector2i = Vector2i(-1, -1)
 var legal_targets: Array[Vector2i] = []
@@ -275,7 +260,7 @@ func _restore_visual_settings() -> void:
 	if Utilities.sky_preset_index >= 0 and Utilities.sky_preset_index < SKY_PRESETS.size():
 		sky_option.select(Utilities.sky_preset_index)
 		_on_sky_preset_selected(Utilities.sky_preset_index)
-	if Utilities.sky_body_index >= 0 and Utilities.sky_body_index < SKY_BODIES.size():
+	if Utilities.sky_body_index >= 0 and Utilities.sky_body_index < sky_bodies.size():
 		sky_body_option.select(Utilities.sky_body_index)
 		_on_sky_body_selected(Utilities.sky_body_index)
 	shadows_toggle.button_pressed = Utilities.shadows_enabled
@@ -316,16 +301,18 @@ func _on_sky_preset_selected(index: int) -> void:
 func _populate_sky_body_options() -> void:
 	sky_body_option.clear()
 	var current: Texture2D = sky_material.get_shader_parameter("sun_texture")
-	for i in SKY_BODIES.size():
-		sky_body_option.add_item(SKY_BODIES[i]["name"], i)
-		if SKY_BODIES[i]["texture"] == current:
+	for i in sky_bodies.size():
+		var texture: Texture2D = sky_bodies[i]
+		var label := texture.resource_path.get_file().get_basename() if texture else "Body %d" % i
+		sky_body_option.add_item(label, i)
+		if texture == current:
 			sky_body_option.select(i)
 
 
 func _on_sky_body_selected(index: int) -> void:
-	if index < 0 or index >= SKY_BODIES.size():
+	if index < 0 or index >= sky_bodies.size():
 		return
-	sky_material.set_shader_parameter("sun_texture", SKY_BODIES[index]["texture"])
+	sky_material.set_shader_parameter("sun_texture", sky_bodies[index])
 	Utilities.sky_body_index = index
 	Utilities.save_settings()
 
@@ -496,6 +483,9 @@ func _enter_game(row: Dictionary, color: int) -> void:
 	_apply_state_json(row.get('game_state_json', ""))
 	Utilities.set_move_history_from_json(row.get('move_history_json', ""))
 	_set_lobby_visible(false)
+	# Camera's default orientation (yaw 0) already sits on Black's side of the
+	# board looking across at White, so White needs the opposite seat.
+	camera_rig.yaw = 0.0 if color == -1 else 180.0
 	load_board(Utilities.board_state)
 	_update_turn_status()
 
@@ -695,8 +685,7 @@ func load_board(state: Array) -> void:
 func spawn_piece(code: int, rank: int, file: int) -> Node3D:
 	var type: int = abs(code)
 	var is_white: bool = code > 0
-	var piece_name: String = TYPE_TO_NAME[type]
-	var piece: Node3D = PIECE_MODELS[piece_name].instantiate()
+	var piece: Node3D = _piece_by_id[type].piece_model.instantiate()
 	piece.assign_piece(type, 1 if is_white else -1)
 	if not is_white:
 		piece.rotate_y(PI)
@@ -710,7 +699,7 @@ func apply_piece_material(piece: Node3D, is_white: bool) -> void:
 	var mesh: MeshInstance3D = get_mesh(piece)
 	if mesh == null or mesh.mesh == null:
 		return
-	var material: Material = PIECE_MATERIAL_WHITE if is_white else PIECE_MATERIAL_BLACK
+	var material: Material = piece_material_white if is_white else piece_material_black
 	for i in mesh.mesh.get_surface_count():
 		mesh.set_surface_override_material(i, material)
 
@@ -941,7 +930,8 @@ func _on_promotion_button_pressed(piece_type: int) -> void:
 func _show_promotion_picker(team: int) -> int:
 	promotion_pending = true
 	for piece_type: int in promotion_buttons:
-		promotion_buttons[piece_type].icon = PROMOTION_ICONS[team].get(piece_type)
+		var settings: PieceSettings = _piece_by_id[piece_type]
+		promotion_buttons[piece_type].icon = settings.piece_white_icon if team == 1 else settings.piece_black_icon
 	promotion_picker.visible = true
 	var chosen: int = await promotion_chosen
 	promotion_picker.visible = false
@@ -1091,7 +1081,7 @@ func _select_square(rank: int, file: int) -> void:
 			if target.x == 0 or target.x == 7:
 				special_targets.append(target)
 	for target in legal_targets:
-		var scene := CURSOR_SPECIAL_SCENE if special_targets.has(target) else CURSOR_SCENE
+		var scene: PackedScene = cursor_special_scene if special_targets.has(target) else cursor_scene
 		var marker := scene.instantiate() as Node3D
 		add_child(marker)
 		marker.transform.origin = board_to_world(target.x, target.y)

@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="PieceSettings" format=3 uid="uid://drf4itkos6krq"]
+
+[ext_resource type="PackedScene" uid="uid://bgencr7s1tmc4" path="res://Objects/Pieces/Scenes/king.tscn" id="1_ijkil"]
+[ext_resource type="Script" uid="uid://dkw8svtdb7mtm" path="res://Objects/Pieces/_scripts/PieceSettings.gd" id="1_xx2xo"]
+
+[resource]
+script = ExtResource("1_xx2xo")
+piece_type = 6
+piece_model = ExtResource("1_ijkil")
+metadata/_custom_type_script = "uid://dkw8svtdb7mtm"

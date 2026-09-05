@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://iqscww7gvmbx"
-path="res://.godot/imported/white_knight.png-2d24de3c3147bfc70da43d9ecc54b9d7.ctex"
+uid="uid://b5n2yn4qbpswe"
+path="res://.godot/imported/white_rook.png-afb0530a45d3b6b9a9f3b66644a528d2.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://UserInterface/icons/white_knight.png"
-dest_files=["res://.godot/imported/white_knight.png-2d24de3c3147bfc70da43d9ecc54b9d7.ctex"]
+source_file="res://Objects/Pieces/Icons/white_rook.png"
+dest_files=["res://.godot/imported/white_rook.png-afb0530a45d3b6b9a9f3b66644a528d2.ctex"]
 
 [params]
 
