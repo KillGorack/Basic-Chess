@@ -10,8 +10,8 @@
 [ext_resource type="Script" uid="uid://gtp6tuq8tvcl" path="res://Objects/_scripts/sun_orbit.gd" id="5_exx3d"]
 [ext_resource type="Texture2D" uid="uid://duy5vsgnhvcrj" path="res://UserInterface/images/CP_Back.png" id="6_127ne"]
 [ext_resource type="Material" uid="uid://6g2awtq37f2k" path="res://Materials/Wood_Light.tres" id="6_kh8as"]
-[ext_resource type="Texture2D" uid="uid://dq315qfu6wv1u" path="res://Materials/Standard/moon.png" id="10_s00v7"]
-[ext_resource type="Texture2D" uid="uid://crufojvbc02mn" path="res://Materials/Standard/PARTICLE_ALPHA.png" id="10_sunbody"]
+[ext_resource type="Texture2D" uid="uid://dq315qfu6wv1u" path="res://Materials/Standard/Moon.png" id="10_s00v7"]
+[ext_resource type="Texture2D" uid="uid://crufojvbc02mn" path="res://Materials/Standard/Sun.png" id="10_sunbody"]
 [ext_resource type="Texture2D" uid="uid://cch5vrnegdtil" path="res://UserInterface/images/button_normal.png" id="11_ojxrt"]
 [ext_resource type="Texture2D" uid="uid://cylkt3xutg4xg" path="res://UserInterface/images/button_pressed.png" id="12_dg2we"]
 [ext_resource type="Texture2D" uid="uid://dk8eoabdi5f61" path="res://UserInterface/images/button_hover.png" id="13_q2phv"]
@@ -56,6 +56,11 @@ shader_parameter/ground_texture_scale = Vector2(0.25, 0.25)
 shader_parameter/ground_texture_speed = Vector2(0.01, 0.02)
 shader_parameter/ground_texture_strength = 1.0
 shader_parameter/ground_texture_color = Color(0.07683643, 0.0621562, 0.044538125, 1)
+shader_parameter/stars_enabled = false
+shader_parameter/star_scale = 100.000004275
+shader_parameter/star_density = 0.98
+shader_parameter/star_brightness = 0.800000038
+shader_parameter/star_color = Color(1, 1, 1, 1)
 
 [sub_resource type="Sky" id="Sky_miosk"]
 sky_material = SubResource("ShaderMaterial_0rem2")
@@ -343,13 +348,16 @@ environment = SubResource("Environment_0sf2q")
 
 [node name="Collider" type="CollisionShape3D" parent="." unique_id=1350610291]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.00062561035, -0.27215576, -0.0061035156)
+visible = false
 shape = SubResource("BoxShape3D_127ne")
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=1811818424]
+[node name="ColliderBrass" type="CollisionShape3D" parent="." unique_id=1811818424]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.0004962459, 0)
+visible = false
 shape = SubResource("ConcavePolygonShape3D_owdvh")
 
-[node name="CollisionShape3D2" type="CollisionShape3D" parent="." unique_id=2018443254]
+[node name="ColliderBase" type="CollisionShape3D" parent="." unique_id=2018443254]
+visible = false
 shape = SubResource("ConcavePolygonShape3D_5ky5v")
 
 [node name="CameraRig" type="Node3D" parent="." unique_id=1752384307]
@@ -896,6 +904,10 @@ layout_mode = 2
 
 [node name="SkyBodyOption" type="OptionButton" parent="UI/SettingsPanel/MarginContainer/VBoxContainer/VisualsPanel/VBoxContainer" unique_id=900000037]
 layout_mode = 2
+
+[node name="StarsToggle" type="CheckBox" parent="UI/SettingsPanel/MarginContainer/VBoxContainer/VisualsPanel/VBoxContainer" unique_id=900000039]
+layout_mode = 2
+text = "Stars"
 
 [node name="HSeparator" type="HSeparator" parent="UI/SettingsPanel/MarginContainer/VBoxContainer/VisualsPanel/VBoxContainer" unique_id=796270100]
 layout_mode = 2

@@ -1,9 +1,9 @@
 [gd_resource type="Resource" script_class="PieceSettings" format=3 uid="uid://dkih85ctnyo2e"]
 
-[ext_resource type="Texture2D" uid="uid://c8gune3n4b8lb" path="res://Objects/Pieces/Icons/black_rook.png" id="1_af5kr"]
+[ext_resource type="Texture2D" uid="uid://cvajbajm8i2qw" path="res://Objects/Pieces/Icons/black_rook_icon.png" id="1_af5kr"]
 [ext_resource type="PackedScene" uid="uid://c13y0y05gebji" path="res://Objects/Pieces/Scenes/rook.tscn" id="1_nskfk"]
 [ext_resource type="Script" uid="uid://dkw8svtdb7mtm" path="res://Objects/Pieces/_scripts/PieceSettings.gd" id="1_qc46q"]
-[ext_resource type="Texture2D" uid="uid://b5n2yn4qbpswe" path="res://Objects/Pieces/Icons/white_rook.png" id="3_o0blv"]
+[ext_resource type="Texture2D" uid="uid://l84wg6bnkens" path="res://Objects/Pieces/Icons/white_rook_icon.png" id="3_o0blv"]
 
 [resource]
 script = ExtResource("1_qc46q")

@@ -1,12 +1,5 @@
 extends Node3D
 
-
-# Each piece's model + both icons now live together in one PieceSettings
-# resource per piece (Objects/Pieces/Resources/*.tres) instead of loose
-# parallel export vars — drag all six .tres files in here, any order.
-# PieceSettings.piece_type matches the board's own 1-6 numbering (see
-# TYPE_TO_NAME's old int codes / chess_rules.gd), which is what
-# _build_piece_by_id keys on below.
 @export var piece_settings: Array[PieceSettings] = []
 @onready var _piece_by_id: Dictionary = _build_piece_by_id()
 
@@ -20,7 +13,6 @@ func _build_piece_by_id() -> Dictionary:
 @export var piece_material_black: Material
 
 const SQUARE_SIZE: float = 0.57
-
 const HOP_DURATION := 0.5
 const HOP_HEIGHT := 1.0
 const SLIDE_SPEED := 2.2
@@ -29,14 +21,6 @@ const SLIDE_MAX_DURATION := 0.55
 const CAPTURE_SETTLE_TIME := 3.0
 const FADE_DURATION := 0.6
 const MIN_QUEUE_NAME_LENGTH := 3
-
-# Volume sliders map linearly into dB across the full silent-to-unity range
-# instead of through linear_to_db() directly — a plain 0..1 fader run through
-# linear_to_db dumps almost all the audible "getting quieter" range into the
-# last few percent of slider travel, making the rest of the slider feel like
-# it does nothing. Using one continuous curve all the way down to SILENT_DB
-# (rather than stopping at some louder floor and hard-muting only at the very
-# last pixel) keeps that fade-to-silence gradual instead of a sudden cliff.
 
 @onready var join_create_panel: Control = $UI/JoinCreate
 @onready var enter_queue_panel: Control = $UI/JoinCreate/margin/HBoxContainer/EnterQueue
@@ -79,35 +63,20 @@ const MIN_QUEUE_NAME_LENGTH := 3
 @onready var music_option: OptionButton = $UI/SettingsPanel/MarginContainer/VBoxContainer/SoundsPanel/VBoxContainer/MusicOption
 @onready var music_volume_slider: HSlider = $UI/SettingsPanel/MarginContainer/VBoxContainer/SoundsPanel/VBoxContainer/MusicVolumeSlider
 
-# Populate/reorder this in the editor Inspector (select the Chessboard node) —
-# a hardcoded preload() path here can't survive a file rename the way an
-# Inspector-assigned resource reference does, so tracks are deliberately not
-# listed by path in code. MusicOption's dropdown items are generated from
-# these at runtime (see _ready), reading each track's own filename as its
-# label, so renaming a file changes its displayed title automatically too.
 @export var music_tracks: Array[AudioStream] = []
 
 @onready var sfx_move_player: AudioStreamPlayer = $SfxMove
 @onready var sfx_land_player: AudioStreamPlayer = $SfxLand
 @onready var effects_volume_slider: HSlider = $UI/SettingsPanel/MarginContainer/VBoxContainer/SoundsPanel/VBoxContainer/EffectsVolumeSlider
 
-# Empty until you drag recorded clips in via the Inspector — no sound plays
-# until then, same reasoning as music_tracks above.
 @export var sfx_move: AudioStream
 @export var sfx_land: AudioStream
 
 @onready var sky_material: ShaderMaterial = $WorldEnvironment.environment.sky.sky_material
 @onready var sky_option: OptionButton = $UI/SettingsPanel/MarginContainer/VBoxContainer/VisualsPanel/VBoxContainer/SkyOption
 @onready var sky_body_option: OptionButton = $UI/SettingsPanel/MarginContainer/VBoxContainer/VisualsPanel/VBoxContainer/SkyBodyOption
+@onready var stars_toggle: CheckBox = $UI/SettingsPanel/MarginContainer/VBoxContainer/VisualsPanel/VBoxContainer/StarsToggle
 
-# The sky shader just billboards whatever's in sun_texture at a fixed
-# angular size — nothing sun-specific about the rendering, so a moon (or
-# anything else with a clean alpha-cutout disc) drops in the same way.
-# Populate/reorder in the editor Inspector (select the Chessboard node) —
-# same reasoning as music_tracks: a hardcoded preload() path here can't
-# survive a file rename, so it's not listed by path in code. The dropdown's
-# labels are generated from each texture's own filename (see
-# _populate_sky_body_options), so renaming a file renames it in the UI too.
 @export var sky_bodies: Array[Texture2D] = []
 
 @onready var shadows_toggle: CheckBox = $UI/SettingsPanel/MarginContainer/VBoxContainer/VisualsPanel/VBoxContainer/QualityToggles/ShadowsToggle
@@ -116,9 +85,6 @@ const MIN_QUEUE_NAME_LENGTH := 3
 @onready var directional_light: DirectionalLight3D = $DirectionalLight3D
 @onready var keybindings_container: VBoxContainer = $UI/SettingsPanel/MarginContainer/VBoxContainer/KeyBindingsPanel/VBoxContainer
 
-# The only keyboard-driven behaviors in the game — everything else is mouse
-# clicks or UI. Add a row here (and nowhere else) to make a new action
-# rebindable; the UI and persistence both key off this list.
 const REBINDABLE_ACTIONS := [
 	{"action": "move_view", "label": "Camera Modifier"},
 	{"action": "Halp", "label": "Toggle Help"},
@@ -126,13 +92,9 @@ const REBINDABLE_ACTIONS := [
 	{"action": "OpenChat", "label": "Open Chat"},
 ]
 
-# Non-empty while waiting for the next key press to finish a rebind — see
-# _unhandled_input.
 var _rebinding_action: String = ""
 var _keybind_buttons: Dictionary = {}
 
-# Edit/add presets right here — each is just the sky shader's own three color
-# params, so tweak these to taste and the dropdown below follows automatically.
 const SKY_PRESETS := [
 	{
 		"name": "Day",
@@ -152,6 +114,18 @@ const SKY_PRESETS := [
 		"horizon": Color(0.55, 0.55, 0.55),
 		"ground": Color(0.18, 0.18, 0.18),
 	},
+	{
+		"name": "Twilight",
+		"top": Color(0.10, 0.08, 0.25),
+		"horizon": Color(0.55, 0.35, 0.55),
+		"ground": Color(0.12, 0.09, 0.15),
+	},
+	{
+		"name": "Night",
+		"top": Color(0.02, 0.02, 0.06),
+		"horizon": Color(0.05, 0.05, 0.12),
+		"ground": Color(0.03, 0.03, 0.04),
+	},
 ]
 
 @export var cursor_scene: PackedScene
@@ -161,22 +135,14 @@ var selected_square: Vector2i = Vector2i(-1, -1)
 var legal_targets: Array[Vector2i] = []
 var highlight_nodes: Array[Node3D] = []
 
-# Mirrors board_state with the live piece node currently sitting on each
-# square (or null), so a move can animate the existing node instead of
-# rebuilding the whole board.
 var piece_nodes: Array = []
 
 var promotion_pending: bool = false
 signal promotion_chosen(piece_type: int)
 
-# Purely presentational — how long since the opponent last polled/moved.
-# -1 means no reading yet (e.g. the first few seconds after entering a game).
 var _opponent_seconds_since_seen: int = -1
 
 func _ready() -> void:
-	# The .import file's own loop flag is off (default for these tracks), but
-	# we want ambient music to loop regardless — override it on the loaded
-	# resource rather than needing every track re-imported with loop enabled.
 	ambient_music.stream.loop = true
 	_populate_music_options()
 	_populate_sky_options()
@@ -199,10 +165,6 @@ func _ready() -> void:
 	btn_new_game.pressed.connect(_on_new_game_pressed)
 	settings_cog.pressed.connect(_toggle_settings_panel)
 	settings_option.item_selected.connect(_on_settings_tab_selected)
-	# Drive initial tab visibility from the dropdown's own selection rather
-	# than trusting each panel's hand-authored `visible` flag in the .tscn to
-	# already agree with it — those can drift out of sync with a manual scene
-	# edit (as happened once already) with no error to catch it.
 	_on_settings_tab_selected(settings_option.selected)
 	music_option.item_selected.connect(_on_music_track_selected)
 	music_volume_slider.value_changed.connect(_on_music_volume_changed)
@@ -210,21 +172,16 @@ func _ready() -> void:
 	sky_option.item_selected.connect(_on_sky_preset_selected)
 	sky_body_option.item_selected.connect(_on_sky_body_selected)
 	shadows_toggle.toggled.connect(_on_shadows_toggled)
+	stars_toggle.toggled.connect(_on_stars_toggled)
 	glow_toggle.toggled.connect(_on_glow_toggled)
 	_restore_audio_settings()
 	_restore_visual_settings()
 	_populate_keybind_rows()
-
-	# We don't yet know if this user is mid-game, already queued, or neither —
-	# hide the queue UI and ask the server before showing anything that might
-	# have to be immediately swapped out.
 	_set_lobby_visible(false)
 	lbl_status.text = "Checking game status, please wait..."
 	Utilities.determine_startup_state()
 
 
-# The lobby camera auto-spins for ambience while you're stuck looking at the
-# queue screen, and stops the moment you're actually in a game.
 func _set_lobby_visible(v: bool) -> void:
 	join_create_panel.visible = v
 	camera_rig.auto_spin_enabled = v
@@ -239,12 +196,6 @@ func _on_settings_tab_selected(index: int) -> void:
 		settings_tabs[i].visible = i == index
 
 
-# Builds the dropdown straight from music_tracks — each item's label is the
-# track's own filename, so renaming a file in the editor renames it here too
-# instead of drifting out of sync with a hand-typed list.
-# Applies whatever was saved to user://settings.cfg last session, if
-# anything — a fresh install has no file yet, so Utilities' -1.0 sentinels
-# just leave each slider at its scene-configured default untouched.
 func _restore_audio_settings() -> void:
 	Utilities.load_settings()
 	if Utilities.music_volume >= 0.0:
@@ -267,11 +218,19 @@ func _restore_visual_settings() -> void:
 	directional_light.shadow_enabled = Utilities.shadows_enabled
 	glow_toggle.button_pressed = Utilities.glow_enabled
 	world_environment.environment.glow_enabled = Utilities.glow_enabled
+	stars_toggle.button_pressed = Utilities.stars_enabled
+	sky_material.set_shader_parameter("stars_enabled", Utilities.stars_enabled)
 
 
 func _on_shadows_toggled(enabled: bool) -> void:
 	directional_light.shadow_enabled = enabled
 	Utilities.shadows_enabled = enabled
+	Utilities.save_settings()
+
+
+func _on_stars_toggled(enabled: bool) -> void:
+	sky_material.set_shader_parameter("stars_enabled", enabled)
+	Utilities.stars_enabled = enabled
 	Utilities.save_settings()
 
 
@@ -348,7 +307,6 @@ func _start_rebind(action: String, button: Button) -> void:
 	button.text = "Press a key..."
 
 
-# Called from _unhandled_input once a key comes in while a rebind is pending.
 func _finish_rebind(physical_keycode: int) -> void:
 	var action := _rebinding_action
 	_rebinding_action = ""
@@ -377,9 +335,6 @@ func _on_music_track_selected(index: int) -> void:
 	Utilities.save_settings()
 
 
-# Effectively silent — the actual floor of the volume curve, not just a
-# quiet-but-audible level, so the fade all the way down is gradual and the
-# bottom of the slider is genuinely off.
 const SILENT_DB := -80.0
 
 func _slider_to_db(linear_value: float) -> float:
@@ -400,7 +355,6 @@ func _on_effects_volume_changed(linear_value: float) -> void:
 	Utilities.save_settings()
 
 
-# No-op until a clip is assigned in the Inspector — nothing plays, nothing errors.
 func _play_sfx(player: AudioStreamPlayer, stream: AudioStream) -> void:
 	if stream == null:
 		return
@@ -446,8 +400,6 @@ func _on_update_queue(data):
 	#lbl_status.text = Utilities.Last_Message
 
 
-# Called once the startup queue-check has come back. If check_for_match also
-# lands a match, _on_matched/_enter_game will override this immediately after.
 func _resolve_startup_state(my_queue_entry: Dictionary) -> void:
 	_set_lobby_visible(true)
 	join_queue_panel.visible = true
@@ -483,19 +435,12 @@ func _enter_game(row: Dictionary, color: int) -> void:
 	_apply_state_json(row.get('game_state_json', ""))
 	Utilities.set_move_history_from_json(row.get('move_history_json', ""))
 	_set_lobby_visible(false)
-	# Camera's default orientation (yaw 0) already sits on Black's side of the
-	# board looking across at White, so White needs the opposite seat.
 	camera_rig.yaw = 0.0 if color == -1 else 180.0
 	load_board(Utilities.board_state)
 	_update_turn_status()
 
 
 func _on_game_state_updated(data: Dictionary) -> void:
-	# A response can arrive after we've already applied a local move (its
-	# request was still queued behind an earlier, slower one). Anything
-	# reporting fewer moves than we already have locally predates that move —
-	# applying it would revert the board and then re-push the reverted state
-	# to the server as truth. Discard it instead of trusting it blindly.
 	var incoming_history = JSON.parse_string(data.get('move_history_json', ""))
 	if typeof(incoming_history) == TYPE_ARRAY and incoming_history.size() < Utilities.move_history.size():
 		return
@@ -564,7 +509,6 @@ func _format_time_ago(seconds: int) -> String:
 	return "%d month%s ago" % [months, "" if months == 1 else "s"]
 
 
-# Shows/hides the draw-offer/respond/new-game buttons for the current state.
 func _update_draw_ui() -> void:
 	if Utilities.app_state != "in_game":
 		btn_offer_draw.visible = false
@@ -591,8 +535,6 @@ func _offer_draw() -> void:
 		return
 	Utilities.draw_offered_by = Utilities.my_color
 	Utilities.white_to_move = not Utilities.white_to_move
-	# No piece moved, so the position is unchanged; since I could only offer
-	# while not in check, my opponent can't be in check in this position either.
 	Utilities.in_check = false
 	_clear_selection()
 	_update_turn_status()
@@ -731,9 +673,6 @@ func get_all_meshes(node: Node) -> Array[MeshInstance3D]:
 	return result
 
 
-# The piece/felt materials are shared .tres resources reused across every
-# piece of that type and color. Duplicate them per-instance so fading out a
-# captured piece can't fade every other piece sharing that material.
 func _isolate_materials(piece: Node3D) -> void:
 	for mesh: MeshInstance3D in get_all_meshes(piece):
 		if mesh.material_override:
@@ -745,11 +684,6 @@ func _isolate_materials(piece: Node3D) -> void:
 					mesh.set_surface_override_material(i, mat.duplicate())
 
 
-# MOVEMENT / CAPTURE ANIMATION =================================
-
-# Diffs two board states and animates exactly the squares that changed —
-# used for both the local player's move and an incoming opponent move, so
-# hopping/capture behaves identically regardless of who moved.
 func _apply_remote_update(old_state: Array, new_state: Array) -> void:
 	var vacated: Array[Vector2i] = []
 	var filled: Array[Vector2i] = []
@@ -762,8 +696,6 @@ func _apply_remote_update(old_state: Array, new_state: Array) -> void:
 			else:
 				filled.append(Vector2i(rank, file))
 
-	# More than a single ply's worth of squares changed (e.g. reconnecting
-	# after missing moves) — too ambiguous to animate meaningfully, just snap.
 	if vacated.size() + filled.size() == 0 or vacated.size() + filled.size() > 4:
 		load_board(new_state)
 		return
@@ -789,25 +721,13 @@ func _apply_remote_update(old_state: Array, new_state: Array) -> void:
 			vacated.remove_at(origin_index)
 			_animate_piece_move(origin, dest, moved_code)
 
-	# Any square that emptied without a matching arrival lost its piece
-	# outright — an en passant capture, which doesn't land on the mover's
-	# own destination square.
 	for square in vacated:
 		_capture_square_if_occupied(square)
 
 	_verify_board_sync(new_state)
 
 
-# Cheap self-healing check: confirms the piece actually sitting on every
-# square matches the authoritative board_state we were just given. The
-# matching above is a heuristic — if a reconnect ever lands more than one
-# move in a single update and two same-type/color pieces are both part of
-# it, it can pair the wrong "vanished" square with the wrong "appeared"
-# square, wrongly treating a relocated piece as captured. board_state itself
-# (used for all move legality/check logic) is never affected by that, but
-# the visual board can end up showing a missing or ghost piece. This runs
-# after every move, local or remote, and any mismatch triggers an instant
-# full rebuild from the real state rather than leaving a lingering desync.
+
 func _verify_board_sync(state: Array) -> void:
 	for rank in range(8):
 		for file in range(8):
@@ -829,10 +749,6 @@ func _animate_piece_move(from: Vector2i, to: Vector2i, code: int) -> void:
 	if node == null:
 		return
 	var target := board_to_world(to.x, to.y)
-	# Every piece but the knight only ever has a legal move when its path is
-	# clear, so sliding always reads correctly for them. The knight is the one
-	# piece allowed to jump over occupied squares, and its L-shaped move isn't
-	# a straight line anyway, so it hops instead.
 	if node.piece == 2:
 		await _hop_tween(node, target)
 	else:
@@ -906,8 +822,6 @@ func _fade_out(piece: Node3D) -> void:
 	await tween.finished
 
 
-# Runs callback on every StandardMaterial3D actually in use across these
-# meshes — each mesh's material_override, plus any per-surface override.
 func _for_each_piece_material(meshes: Array[MeshInstance3D], callback: Callable) -> void:
 	for mesh in meshes:
 		if not is_instance_valid(mesh):
@@ -920,8 +834,6 @@ func _for_each_piece_material(meshes: Array[MeshInstance3D], callback: Callable)
 				if mat is StandardMaterial3D:
 					callback.call(mat)
 
-
-# PROMOTION PICKER ================================================
 
 func _on_promotion_button_pressed(piece_type: int) -> void:
 	promotion_chosen.emit(piece_type)
@@ -939,8 +851,6 @@ func _show_promotion_picker(team: int) -> int:
 	return chosen
 
 
-# INPUT / MOVE HANDLING ========================================
-
 func _unhandled_input(event: InputEvent) -> void:
 	if _rebinding_action != "" and event is InputEventKey and event.pressed and not event.echo:
 		_finish_rebind(event.physical_keycode)
@@ -951,8 +861,6 @@ func _unhandled_input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 		return
 	if event.is_action_pressed("OpenChat"):
-		# Only reaches here if no focused Control already ate the keystroke
-		# (e.g. typing "/" into txt_Name), so this is safe to treat as "open chat".
 		if Utilities.app_state == "in_game" and not chat_input.visible:
 			_open_chat_input()
 			get_viewport().set_input_as_handled()
@@ -1013,10 +921,6 @@ func _raycast_to_square(screen_pos: Vector2) -> Vector2i:
 	var from: Vector3 = camera.project_ray_origin(screen_pos)
 	var dir: Vector3 = camera.project_ray_normal(screen_pos)
 	var space_state := get_world_3d().direct_space_state
-	# Board only (layer 2) — pieces are RigidBody3D on the default layer, and
-	# hitting a piece's collision mesh instead of the flat board gives a hit
-	# point off the square's center, which world_to_board can round to the
-	# wrong square, especially once physics has nudged a piece off-center.
 	var query := PhysicsRayQueryParameters3D.create(from, from + dir * 2000.0)
 	query.collision_mask = 2
 	var result := space_state.intersect_ray(query)
@@ -1064,10 +968,6 @@ func _select_square(rank: int, file: int) -> void:
 	selected_square = Vector2i(rank, file)
 	legal_targets = ChessRules.get_true_legal_moves(Utilities.board_state, rank, file)
 	var code: int = Utilities.board_state[rank][file]
-	# Targets that do more than relocate the selected piece (castling jumps a
-	# rook too, en passant captures a pawn that isn't even on the target
-	# square, promotion turns the pawn into something else) get the special
-	# cursor instead of the plain move marker.
 	var special_targets: Array[Vector2i] = []
 	if abs(code) == 6:
 		var castle_targets := _get_castle_targets(1 if code > 0 else -1)
@@ -1149,8 +1049,6 @@ func _apply_local_move(from: Vector2i, to: Vector2i) -> void:
 	Utilities.send_move()
 
 
-# Once a king or rook leaves its home square, that side's castling right is
-# gone for good, even if the piece later returns.
 func _update_castle_rights(from: Vector2i, type: int, team: int) -> void:
 	if type == 6:
 		if team == 1:

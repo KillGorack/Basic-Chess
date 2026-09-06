@@ -85,6 +85,7 @@ var sky_body_index: int = -1
 # authored defaults, so a fresh install with no settings file is correct too.
 var shadows_enabled: bool = true
 var glow_enabled: bool = true
+var stars_enabled: bool = false
 
 # action name -> physical_keycode. Only holds actions the player has actually
 # rebound away from their project.godot default — nothing here for an action
@@ -102,6 +103,7 @@ func load_settings() -> void:
 	sky_body_index = cfg.get_value("visuals", "sky_body_index", sky_body_index)
 	shadows_enabled = cfg.get_value("visuals", "shadows_enabled", shadows_enabled)
 	glow_enabled = cfg.get_value("visuals", "glow_enabled", glow_enabled)
+	stars_enabled = cfg.get_value("visuals", "stars_enabled", stars_enabled)
 	keybind_overrides.clear()
 	if cfg.has_section("keybinds"):
 		for action in cfg.get_section_keys("keybinds"):
@@ -118,6 +120,7 @@ func save_settings() -> void:
 	cfg.set_value("visuals", "sky_body_index", sky_body_index)
 	cfg.set_value("visuals", "shadows_enabled", shadows_enabled)
 	cfg.set_value("visuals", "glow_enabled", glow_enabled)
+	cfg.set_value("visuals", "stars_enabled", stars_enabled)
 	for action in keybind_overrides:
 		cfg.set_value("keybinds", action, keybind_overrides[action])
 	cfg.save(SETTINGS_PATH)
@@ -144,7 +147,7 @@ func _apply_keybind(action: String, physical_keycode: int) -> void:
 		return
 	InputMap.action_erase_events(action)
 	var ev := InputEventKey.new()
-	ev.physical_keycode = physical_keycode
+	ev.physical_keycode = physical_keycode as Key
 	InputMap.action_add_event(action, ev)
 
 func _ready() -> void:

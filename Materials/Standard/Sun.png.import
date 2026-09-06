@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://b5n2yn4qbpswe"
-path="res://.godot/imported/white_rook.png-afb0530a45d3b6b9a9f3b66644a528d2.ctex"
+uid="uid://crufojvbc02mn"
+path="res://.godot/imported/Sun.png-5ad13b180e71302af104c371ef052bd4.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://Objects/Pieces/Icons/white_rook.png"
-dest_files=["res://.godot/imported/white_rook.png-afb0530a45d3b6b9a9f3b66644a528d2.ctex"]
+source_file="res://Materials/Standard/Sun.png"
+dest_files=["res://.godot/imported/Sun.png-5ad13b180e71302af104c371ef052bd4.ctex"]
 
 [params]
 
@@ -37,4 +37,4 @@ process/normal_map_invert_y=false
 process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
 process/size_limit=0
-detect_3d/compress_to=1
+detect_3d/compress_to=0

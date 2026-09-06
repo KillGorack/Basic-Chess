@@ -22,6 +22,36 @@ uniform vec2 ground_texture_speed = vec2(0.0, 0.0);
 uniform float ground_texture_strength : hint_range(0.0, 1.0) = 0.15;
 uniform vec3 ground_texture_color : source_color = vec3(0.12, 0.1, 0.08);
 
+// Starfield — independent of everything else above, toggle on/off freely.
+uniform bool stars_enabled = false;
+uniform float star_scale : hint_range(10.0, 200.0) = 200.0; // higher = smaller/denser star grid
+uniform float star_density : hint_range(0.9, 0.999) = 0.98; // higher = fewer stars
+uniform float star_brightness : hint_range(0.0, 3.0) = 1.2;
+uniform vec3 star_color : source_color = vec3(1.0, 1.0, 1.0);
+
+
+// Cheap 3D->1D hash — no texture needed, just deterministic noise per grid cell.
+float hash13(vec3 p) {
+    p = fract(p * 0.1031);
+    p += dot(p, p.yzx + 33.33);
+    return fract((p.x + p.y) * p.z);
+}
+
+
+vec3 get_stars(vec3 dir, float sky_visibility, float cloud_coverage) {
+    vec3 grid = dir * star_scale;
+    vec3 cell = floor(grid);
+    vec3 local = fract(grid) - 0.5;
+    float h = hash13(cell);
+    if (h < star_density) {
+        return vec3(0.0);
+    }
+    float dot_size = mix(0.05, 0.35, fract(h * 17.0)); // vary star size a bit so it doesn't look uniform
+    float dot_mask = smoothstep(dot_size, 0.0, length(local));
+    float twinkle = 0.7 + 0.3 * sin(TIME * (1.0 + h * 5.0) + h * 6.2831853);
+    return star_color * dot_mask * twinkle * star_brightness * sky_visibility * (1.0 - cloud_coverage);
+}
+
 
 vec3 get_sky_color(vec3 dir) {
     float horizon_factor = clamp(dir.y, -1.0, 1.0);
@@ -49,6 +79,10 @@ vec3 get_sky_color(vec3 dir) {
     vec3 cloud_tint_1 = mix(base_color, cloud_color_1, cloud_mask1 * 0.6);
     vec3 cloud_tint_2 = mix(base_color, cloud_color_2, cloud_mask2 * 0.6);
     vec3 final_color = max(cloud_tint_1, cloud_tint_2);
+    if (stars_enabled) {
+        float cloud_coverage = max(cloud_mask1, cloud_mask2);
+        final_color += get_stars(dir, sky_visibility, cloud_coverage);
+    }
     float sun_el = radians(sun_angle);
     vec2 az = length(sun_azimuth_dir) > 0.0001 ? normalize(sun_azimuth_dir) : vec2(1.0, 0.0);
     vec3 sun_direction = normalize(vec3(az.x * cos(sun_el), sin(sun_el), az.y * cos(sun_el)));
