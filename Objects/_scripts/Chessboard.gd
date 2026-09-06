@@ -583,6 +583,10 @@ func _decline_draw() -> void:
 	if Utilities.draw_offered_by != -Utilities.my_color or Utilities.game_over:
 		return
 	Utilities.draw_offered_by = 0
+	# Offering a draw hands the turn to whoever's responding (the server only
+	# lets the current mover submit any update, offer included) — declining
+	# has to hand it back, or the offering player loses their turn outright.
+	Utilities.white_to_move = not Utilities.white_to_move
 	_update_turn_status()
 	Utilities.send_move()
 
