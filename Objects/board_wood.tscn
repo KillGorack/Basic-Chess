@@ -647,44 +647,16 @@ custom_minimum_size = Vector2(96, 96)
 layout_mode = 2
 expand_icon = true
 
-[node name="HelpPanel" type="TextureRect" parent="UI" unique_id=1181666308]
-visible = false
-anchors_preset = 4
-anchor_top = 0.5
-anchor_bottom = 0.5
-offset_top = -145.25
-offset_right = 344.0
-offset_bottom = 145.25
-grow_vertical = 2
-texture = ExtResource("6_127ne")
-
-[node name="lbl_Help" type="Label" parent="UI/HelpPanel" unique_id=500000019]
-layout_mode = 0
-offset_left = 15.0
-offset_top = 15.0
-offset_right = 325.0
-offset_bottom = 194.0
-text = "Controls
-
-Ctrl + Left Mouse Drag: Rotate camera
-Ctrl + Double Click: Recenter view
-Ctrl + Mouse Wheel: Zoom
-F12: Screenshot
-F1: Toggle this help
-
-Left Click: Piece activation
-Long Left Click: Move (green markers)"
-
 [node name="btn_quit" type="TextureButton" parent="UI" unique_id=1601074969]
-custom_minimum_size = Vector2(138, 40)
+custom_minimum_size = Vector2(135, 40)
 custom_maximum_size = Vector2(138, 40)
 anchors_preset = 1
 anchor_left = 1.0
 anchor_right = 1.0
-offset_left = -235.0
+offset_left = -145.0
 offset_top = 10.0
 offset_right = -10.0
-offset_bottom = 75.0
+offset_bottom = 50.0
 grow_horizontal = 0
 texture_normal = ExtResource("11_ojxrt")
 texture_pressed = ExtResource("12_dg2we")
@@ -709,22 +681,25 @@ anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -140.0
-offset_top = -122.0
-offset_right = 170.0
-offset_bottom = 152.0
+offset_left = -200.0
+offset_top = -175.0
+offset_right = 200.0
+offset_bottom = 175.0
 grow_horizontal = 2
 grow_vertical = 2
 texture = ExtResource("15_dg2we")
 
 [node name="margin" type="MarginContainer" parent="UI/JoinCreate" unique_id=1073027800]
-layout_mode = 0
-offset_right = 310.0
-offset_bottom = 274.0
-theme_override_constants/margin_left = 15
-theme_override_constants/margin_top = 15
-theme_override_constants/margin_right = 15
-theme_override_constants/margin_bottom = 15
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 25
+theme_override_constants/margin_top = 25
+theme_override_constants/margin_right = 25
+theme_override_constants/margin_bottom = 25
 
 [node name="HBoxContainer" type="HBoxContainer" parent="UI/JoinCreate/margin" unique_id=397931818]
 layout_mode = 2
@@ -738,8 +713,8 @@ layout_mode = 2
 theme_override_styles/normal = SubResource("StyleBoxFlat_dg2we")
 
 [node name="btn_Queue" type="TextureButton" parent="UI/JoinCreate/margin/HBoxContainer/EnterQueue" unique_id=252913160]
-custom_minimum_size = Vector2(138, 40)
-custom_maximum_size = Vector2(138, 40)
+custom_minimum_size = Vector2(135, 40)
+custom_maximum_size = Vector2(135, 40)
 layout_mode = 2
 texture_normal = ExtResource("11_ojxrt")
 texture_pressed = ExtResource("12_dg2we")
@@ -762,7 +737,7 @@ layout_mode = 2
 size_flags_horizontal = 3
 
 [node name="tree_queue" type="Tree" parent="UI/JoinCreate/margin/HBoxContainer/JoinQueue" unique_id=598896647]
-custom_minimum_size = Vector2(0, 192)
+custom_minimum_size = Vector2(0, 247)
 layout_mode = 2
 theme_override_font_sizes/font_size = 12
 theme_override_font_sizes/title_button_font_size = 12
@@ -776,17 +751,43 @@ select_mode = 1
 layout_mode = 2
 theme_override_styles/separator = SubResource("StyleBoxLine_dg2we")
 
-[node name="btn_Queue" type="TextureButton" parent="UI/JoinCreate/margin/HBoxContainer/JoinQueue" unique_id=222656726]
+[node name="ButtonRow" type="HBoxContainer" parent="UI/JoinCreate/margin/HBoxContainer/JoinQueue" unique_id=960000001]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 8
+alignment = 2
+
+[node name="btn_RemoveQueue" type="TextureButton" parent="UI/JoinCreate/margin/HBoxContainer/JoinQueue/ButtonRow" unique_id=960000002]
+visible = false
 custom_minimum_size = Vector2(138, 40)
 custom_maximum_size = Vector2(138, 40)
 layout_mode = 2
-size_flags_horizontal = 8
 texture_normal = ExtResource("11_ojxrt")
 texture_pressed = ExtResource("12_dg2we")
 texture_hover = ExtResource("13_q2phv")
 texture_disabled = ExtResource("14_osr0l")
 
-[node name="Label" type="Label" parent="UI/JoinCreate/margin/HBoxContainer/JoinQueue/btn_Queue" unique_id=28357414]
+[node name="Label" type="Label" parent="UI/JoinCreate/margin/HBoxContainer/JoinQueue/ButtonRow/btn_RemoveQueue" unique_id=960000003]
+custom_minimum_size = Vector2(138, 40)
+custom_maximum_size = Vector2(138, 40)
+layout_mode = 0
+offset_right = 138.0
+offset_bottom = 40.0
+theme_override_font_sizes/font_size = 14
+text = "Leave Queue"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="btn_Queue" type="TextureButton" parent="UI/JoinCreate/margin/HBoxContainer/JoinQueue/ButtonRow" unique_id=222656726]
+custom_minimum_size = Vector2(135, 40)
+custom_maximum_size = Vector2(138, 40)
+layout_mode = 2
+texture_normal = ExtResource("11_ojxrt")
+texture_pressed = ExtResource("12_dg2we")
+texture_hover = ExtResource("13_q2phv")
+texture_disabled = ExtResource("14_osr0l")
+
+[node name="Label" type="Label" parent="UI/JoinCreate/margin/HBoxContainer/JoinQueue/ButtonRow/btn_Queue" unique_id=28357414]
 custom_minimum_size = Vector2(138, 40)
 custom_maximum_size = Vector2(138, 40)
 layout_mode = 0
@@ -804,10 +805,10 @@ anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -140.0
-offset_top = -122.0
-offset_right = 170.0
-offset_bottom = 152.0
+offset_left = -200.0
+offset_top = -175.0
+offset_right = 200.0
+offset_bottom = 175.0
 grow_horizontal = 2
 grow_vertical = 2
 texture = ExtResource("15_dg2we")
@@ -819,10 +820,10 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_constants/margin_left = 15
-theme_override_constants/margin_top = 15
-theme_override_constants/margin_right = 15
-theme_override_constants/margin_bottom = 15
+theme_override_constants/margin_left = 25
+theme_override_constants/margin_top = 25
+theme_override_constants/margin_right = 25
+theme_override_constants/margin_bottom = 25
 
 [node name="VBoxContainer" type="VBoxContainer" parent="UI/SettingsPanel/MarginContainer" unique_id=549626767]
 layout_mode = 2

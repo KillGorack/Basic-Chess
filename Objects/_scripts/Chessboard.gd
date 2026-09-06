@@ -29,7 +29,8 @@ const MIN_QUEUE_NAME_LENGTH := 3
 @onready var lbl_status = $UI/lbl_Status
 @onready var lbl_opponent_status: Label = $UI/lbl_OpponentStatus
 @onready var tree_game_queue = $UI/JoinCreate/margin/HBoxContainer/JoinQueue/tree_queue
-@onready var btn_join_game: TextureButton = $UI/JoinCreate/margin/HBoxContainer/JoinQueue/btn_Queue
+@onready var btn_join_game: TextureButton = $UI/JoinCreate/margin/HBoxContainer/JoinQueue/ButtonRow/btn_Queue
+@onready var btn_remove_queue: TextureButton = $UI/JoinCreate/margin/HBoxContainer/JoinQueue/ButtonRow/btn_RemoveQueue
 @onready var camera: Camera3D = $CameraRig/Camera3D
 @onready var camera_rig = $CameraRig
 
@@ -48,7 +49,6 @@ const MIN_QUEUE_NAME_LENGTH := 3
 @onready var btn_accept_draw: TextureButton = $UI/MarginContainer/DrawControls/btn_AcceptDraw
 @onready var btn_decline_draw: TextureButton = $UI/MarginContainer/DrawControls/btn_DeclineDraw
 @onready var btn_new_game: TextureButton = $UI/MarginContainer/DrawControls/btn_NewGame
-@onready var help_panel: Control = $UI/HelpPanel
 
 @onready var settings_panel: Control = $UI/SettingsPanel
 @onready var settings_cog: TextureButton = $UI/SettingsCog
@@ -87,7 +87,6 @@ const MIN_QUEUE_NAME_LENGTH := 3
 
 const REBINDABLE_ACTIONS := [
 	{"action": "move_view", "label": "Camera Modifier"},
-	{"action": "Halp", "label": "Toggle Help"},
 	{"action": "ScreenCapture", "label": "Screenshot"},
 	{"action": "OpenChat", "label": "Open Chat"},
 ]
@@ -149,6 +148,7 @@ func _ready() -> void:
 	_populate_sky_body_options()
 	load_board(Utilities.board_state)
 	Utilities.signal_add_local_to_queue.connect(_on_user_added_to_queue)
+	Utilities.signal_left_queue.connect(_on_left_queue)
 	Utilities.signal_update_queue.connect(_on_update_queue)
 	Utilities.signal_set_match.connect(_on_set_match)
 	Utilities.signal_matched.connect(_on_matched)
@@ -157,6 +157,7 @@ func _ready() -> void:
 	Utilities.signal_chat_updated.connect(_on_chat_log_updated)
 	chat_input.text_submitted.connect(_on_chat_submitted)
 	btn_join_game.pressed.connect(_join_selected_game)
+	btn_remove_queue.pressed.connect(_leave_queue)
 	for piece_type: int in promotion_buttons:
 		promotion_buttons[piece_type].pressed.connect(_on_promotion_button_pressed.bind(piece_type))
 	btn_offer_draw.pressed.connect(_offer_draw)
@@ -382,10 +383,31 @@ func _join_selected_game() -> void:
 
 func _on_user_added_to_queue():
 	enter_queue_panel.visible = false
+	btn_remove_queue.visible = true
 	lbl_status.text = Utilities.Last_Message
 
 
+func _leave_queue() -> void:
+	Utilities.leave_queue()
+
+
+func _on_left_queue() -> void:
+	enter_queue_panel.visible = true
+	btn_remove_queue.visible = false
+	lbl_status.text = Utilities.Last_Message
+	txt_Name.grab_focus()
+
+
 func _on_update_queue(data):
+	# The heartbeat can rebuild this list while a row is selected — capture
+	# which game was selected beforehand and reselect it after, so a poll
+	# landing between "select a row" and "click Join" doesn't drop it. If
+	# that game got matched by someone else in the meantime, it just won't
+	# be in the new data to reselect — correctly, since it's gone either way.
+	var selected_id: int = -1
+	var selected_item: TreeItem = tree_game_queue.get_selected()
+	if selected_item:
+		selected_id = int(selected_item.get_metadata(0))
 	tree_game_queue.clear()
 	var root = tree_game_queue.create_item()
 	var my_queue_entry: Dictionary = {}
@@ -393,6 +415,8 @@ func _on_update_queue(data):
 		var item = tree_game_queue.create_item(root)
 		item.set_text(0, str(game.game_name))
 		item.set_metadata(0, int(game.ID))
+		if int(game.ID) == selected_id:
+			item.select(0)
 		if str(game.get("user_a_key", "")) == Utilities.user_key:
 			my_queue_entry = game
 	if Utilities.app_state == "checking":
@@ -406,11 +430,14 @@ func _resolve_startup_state(my_queue_entry: Dictionary) -> void:
 	if not my_queue_entry.is_empty():
 		Utilities.app_state = "queued"
 		enter_queue_panel.visible = false
+		btn_remove_queue.visible = true
 		lbl_status.text = "You're already queued as \"%s\" — waiting for an opponent..." % str(my_queue_entry.game_name)
 	else:
 		Utilities.app_state = "idle"
 		enter_queue_panel.visible = true
+		btn_remove_queue.visible = false
 		lbl_status.text = "Enter a name and queue up for a new game!"
+		txt_Name.grab_focus()
 
 
 func _on_set_match(data: Dictionary) -> void:
@@ -570,8 +597,10 @@ func _on_new_game_pressed() -> void:
 	_set_lobby_visible(true)
 	enter_queue_panel.visible = true
 	join_queue_panel.visible = true
+	btn_remove_queue.visible = false
 	_update_turn_status() # hides the draw/new-game buttons now that app_state is back to "idle"
 	lbl_status.text = "Enter a name and queue up for a new game!"
+	txt_Name.grab_focus()
 
 
 func _apply_state_json(json_string: String) -> void:
@@ -865,9 +894,6 @@ func _unhandled_input(event: InputEvent) -> void:
 			_open_chat_input()
 			get_viewport().set_input_as_handled()
 			return
-	if event.is_action_pressed("Halp"):
-		help_panel.visible = not help_panel.visible
-		return
 	if Utilities.app_state != "in_game" or Utilities.game_over or promotion_pending or not _is_my_turn():
 		return
 	if Input.is_action_pressed("move_view"):

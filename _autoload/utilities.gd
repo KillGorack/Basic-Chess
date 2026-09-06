@@ -27,6 +27,7 @@ var requests_queue: Array = []
 signal signal_add_local_to_queue()
 signal signal_update_queue()
 signal signal_set_match()
+signal signal_left_queue()
 
 var board_state := [
 	[ 4, 2, 3, 5, 6, 3, 2, 4 ],
@@ -126,7 +127,7 @@ func save_settings() -> void:
 	cfg.save(SETTINGS_PATH)
 
 # Registers actions the game needs that aren't in project.godot's Input Map
-# at all yet (as opposed to move_view/Halp/ScreenCapture, which already have
+# at all yet (as opposed to move_view/ScreenCapture, which already have
 # a default binding there and just need to be rebindable). Runs before
 # load_settings() ever applies a saved override, so there's always a default
 # event on the action first.
@@ -247,6 +248,16 @@ func determine_startup_state() -> void:
 	get_queue_data()
 	requestor()
 
+# Cancels a still-unmatched queue entry you created — a no-op server-side if
+# you've already been matched or were never queued, so it's always safe to
+# call.
+func leave_queue() -> void:
+	requests_queue.append({
+		"type": "leave_queue",
+		"data": {}
+	})
+	requestor()
+
 func get_queue_data():
 	for r in requests_queue:
 		if r.type == "get_queue":
@@ -337,6 +348,8 @@ func requestor():
 			_send_set_matched(req.data['id'])
 		"check_for_match":
 			_send_check_for_match()
+		"leave_queue":
+			_send_leave_queue()
 		"update_game_state":
 			_send_update_game_state()
 		"get_game_state":
@@ -354,6 +367,19 @@ func _send_add_to_queue(Name):
 		"user_a_key": user_key,
 		"game_state_json": _state_json(),
 		"move_history_json": _move_history_json(),
+		"formidentifier": "alacarte\\game\\chessAPI"
+	}
+	var post_data_encoded = encode_dict_string(post_data)
+	var full_url = url + "?" + encode_dict_string(api_params)
+	var headers = ["Content-Type: application/x-www-form-urlencoded"]
+	http_request.request(full_url, headers, HTTPClient.METHOD_POST, post_data_encoded)
+
+
+func _send_leave_queue():
+	function_complete = "leave_queue"
+	var post_data = {
+		"function": "leave_queue",
+		"user_a_key": user_key,
 		"formidentifier": "alacarte\\game\\chessAPI"
 	}
 	var post_data_encoded = encode_dict_string(post_data)
@@ -497,6 +523,11 @@ func _on_request_completed(_result, _response_code, _headers, body):
 		if json_result.get('status') == "success":
 			app_state = "queued"
 		signal_add_local_to_queue.emit()
+	if function_complete == "leave_queue":
+		Utilities.Last_Message = json_result.get('message', "")
+		app_state = "idle"
+		get_queue_data()
+		signal_left_queue.emit()
 	if function_complete == "update_queue":
 		Utilities.Last_Message = json_result['message']
 		signal_update_queue.emit(json_result)
