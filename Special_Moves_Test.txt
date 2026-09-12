@@ -1,1 +1,22 @@
+This one is to test the special moves..
 {"black_king_moved":false,"black_rook_a_moved":false,"black_rook_h_moved":false,"board":[[4,0,0,0,6,0,0,4],[0,0,-1,0,0,0,0,0],[0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0],[0,0,0,1,-1,0,0,0],[0,0,0,0,0,0,0,0],[0,0,1,0,0,0,0,0],[-4,0,0,0,-6,0,0,-4]],"draw_offered_by":0,"draw_reason":"Stalemate","en_passant_target":[5,4],"game_over":false,"in_check":false,"white_king_moved":false,"white_rook_a_moved":false,"white_rook_h_moved":false,"white_to_move":true,"winner":0}
+
+Baller gamestates
+
+Opera Game — Morphy's mate, 1858 (draw_reason bug fixed — it's a checkmate, not a stalemate):
+{"black_king_moved":false,"black_rook_a_moved":true,"black_rook_h_moved":false,"board":[[0,0,6,0,0,0,0,0],[1,1,1,0,0,1,1,1],[0,0,0,0,0,0,0,0],[0,0,0,0,1,0,0,0],[0,0,0,0,-1,0,3,0],[0,0,0,0,-5,0,0,0],[-1,0,0,0,0,-1,-1,-1],[0,-2,0,4,-6,-3,0,-4]],"draw_offered_by":0,"draw_reason":"","en_passant_target":[-1,-1],"game_over":true,"in_check":true,"white_king_moved":true,"white_rook_a_moved":true,"white_rook_h_moved":true,"white_to_move":false,"winner":1}
+
+Back-rank checkmate (dramatic finish, minimal pieces):
+{"black_king_moved":true,"black_rook_a_moved":true,"black_rook_h_moved":true,"board":[[0,0,0,0,0,0,6,0],[1,1,1,0,0,1,1,1],[0,0,0,0,0,2,0,0],[0,0,3,0,0,0,0,0],[0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0],[-1,-1,-1,0,0,-1,-1,-1],[4,-2,-3,0,0,0,-6,0]],"draw_offered_by":0,"draw_reason":"","en_passant_target":[-1,-1],"game_over":true,"in_check":true,"white_king_moved":true,"white_rook_a_moved":true,"white_rook_h_moved":true,"white_to_move":false,"winner":1}
+
+Promoted second queen (late endgame, striking to look at):
+{"black_king_moved":true,"black_rook_a_moved":false,"black_rook_h_moved":true,"board":[[4,0,0,5,0,0,6,0],[1,1,0,0,0,1,1,1],[0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0],[-1,-1,0,0,0,-1,-1,-1],[-4,0,0,0,5,-4,-6,0]],"draw_offered_by":0,"draw_reason":"","en_passant_target":[-1,-1],"game_over":false,"in_check":false,"white_king_moved":true,"white_rook_a_moved":false,"white_rook_h_moved":true,"white_to_move":true,"winner":0}
+
+Full-board developed middlegame (both castled, all minor pieces out — good general "look at all the pieces" shot):
+{"black_king_moved":true,"black_rook_a_moved":false,"black_rook_h_moved":true,"board":[[4,0,0,5,0,4,6,0],[1,1,1,0,0,1,1,1],[0,0,2,0,0,2,0,0],[0,0,3,1,1,0,0,0],[0,0,0,0,-1,0,3,0],[0,0,-2,-1,0,-2,-1,0],[-1,-1,-1,0,0,-1,-3,-1],[-4,0,-3,-5,0,-4,-6,0]],"draw_offered_by":0,"draw_reason":"","en_passant_target":[-1,-1],"game_over":false,"in_check":false,"white_king_moved":true,"white_rook_a_moved":false,"white_rook_h_moved":true,"white_to_move":true,"winner":0}
+
+En passant available (nice for showing off a specific mechanic, uncluttered board):
+{"black_king_moved":false,"black_rook_a_moved":false,"black_rook_h_moved":false,"board":[[4,0,0,0,6,0,0,4],[1,1,1,1,0,1,1,1],[0,0,0,0,0,0,0,0],[0,0,0,-1,1,0,0,0],[0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0],[-1,-1,-1,0,-1,-1,-1,-1],[-4,0,0,0,-6,0,0,-4]],"draw_offered_by":0,"draw_reason":"","en_passant_target":[2,4],"game_over":false,"in_check":false,"white_king_moved":false,"white_rook_a_moved":false,"white_rook_h_moved":false,"white_to_move":false,"winner":0}
+
+The Immortal Game — Anderssen vs. Kieseritzky, 1851 (23.Be7# — white sacs both rooks and the queen, mates anyway):
+{"black_king_moved":true,"black_rook_a_moved":false,"black_rook_h_moved":false,"board":[[-5,0,0,0,0,0,-3,0],[1,0,1,0,6,0,0,0],[0,0,0,0,0,0,0,0],[0,0,0,0,0,0,1,0],[0,-1,0,2,1,0,0,1],[-2,0,0,0,0,-2,0,0],[-1,0,0,-1,3,-1,2,-1],[-4,0,-3,-6,0,0,0,-4]],"draw_offered_by":0,"draw_reason":"","en_passant_target":[-1,-1],"game_over":true,"in_check":true,"white_king_moved":true,"white_rook_a_moved":true,"white_rook_h_moved":true,"white_to_move":false,"winner":1}

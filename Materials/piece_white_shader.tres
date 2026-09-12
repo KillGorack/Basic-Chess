@@ -5,11 +5,11 @@
 [resource]
 render_priority = 0
 shader = ExtResource("1_44olk")
-shader_parameter/albedo = Color(0.91858274, 0.79394424, 0.8204381, 1)
-shader_parameter/roughness = 0.0830000039425
-shader_parameter/metallic = 0.834000039615
-shader_parameter/edge_color = Color(0.11858138, 0.11858138, 0.11858138, 1)
+shader_parameter/albedo = Color(0.77254903, 0.7176471, 0.7254902, 1)
+shader_parameter/roughness = 0.2000000095
+shader_parameter/metallic = 0.750000035625
+shader_parameter/edge_color = Color(0.096204735, 0.09620475, 0.096204735, 1)
 shader_parameter/edge_metallic = 0.6000000285
-shader_parameter/edge_roughness = 0.394000018715
-shader_parameter/edge_strength = 1.0
+shader_parameter/edge_roughness = 0.2
+shader_parameter/edge_strength = 1.0000000475
 shader_parameter/edge_sharpness = 3.0
